@@ -123,7 +123,6 @@ library TreeLibrary {
             depth = depth - (uint32(1) << i);
             ++i;
         }
-        depths[i] = depth;
 
         return depths;
     }
