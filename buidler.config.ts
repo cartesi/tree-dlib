@@ -98,9 +98,6 @@ const config: BuidlerConfig = {
         },
         user: {
             default: 0
-        },
-        worker: {
-            default: 1
         }
     }
 };

@@ -27,7 +27,7 @@ library TreeLibrary {
         bytes data; // data holding in the vertex
     }
 
-    event VertexInserted(Vertex _vertex);
+    event VertexInserted(uint32 _vertex);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
@@ -58,7 +58,7 @@ library TreeLibrary {
         }
 
         _tree.vertices.push(v);
-        emit VertexInserted(v);
+        emit VertexInserted(uint32(_tree.vertices.length - 1));
     }
 
     /// @notice Search an ancestor of a vertex in the tree at a certain depth
