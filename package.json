@@ -1,0 +1,73 @@
+{
+  "name": "@cartesi/tree",
+  "version": "0.1.0",
+  "description": "Tree DLib",
+  "scripts": {
+    "info": "npm-scripts-info",
+    "prepare": "buidler compile",
+    "test": "buidler test",
+    "clean": "rimraf artifacts && rimraf cache && rimraf deployments && rimraf src/types/*",
+    "deploy": "run-s deploy:development",
+    "deploy:testnet": "run-s deploy:ropsten deploy:rinkeby deploy:matic_testnet deploy:bsc_testnet",
+    "deploy:development": "buidler deploy --network localhost",
+    "deploy:ropsten": "buidler deploy --network ropsten",
+    "deploy:kovan": "buidler deploy --network kovan",
+    "deploy:rinkeby": "buidler deploy --network rinkeby",
+    "deploy:matic_testnet": "buidler deploy --network matic_testnet",
+    "deploy:bsc_testnet": "buidler deploy --network bsc_testnet",
+    "prepack": "run-s clean deploy:testnet",
+    "start": "buidler node"
+  },
+  "scripts-info": {
+    "info": "Displays information about the scripts.",
+    "test": "Run unit tests",
+    "clean": "Clean build artifacts, including contracts deployment information",
+    "deploy": "Deploy contracts to local ganache. Requires ganache running on localhost:8545",
+    "deploy:testnet": "Deploy contracts to all supported testnets. Requires two environment variables: PROJECT_ID and MNEMONIC.",
+    "deploy:development": "Deploy contracts to local ganache. Requires ganache running on localhost:8545",
+    "deploy:ropsten": "Deploy contracts to ropsten. Requires two environment variables: PROJECT_ID and MNEMONIC.",
+    "deploy:kovan": "Deploy contracts to kovan. Requires two environment variables: PROJECT_ID and MNEMONIC.",
+    "deploy:rinkeby": "Deploy contracts to rinkeby. Requires two environment variables: PROJECT_ID and MNEMONIC.",
+    "deploy:matic_testnet": "Deploy contracts to matic_testnet.",
+    "deploy:bsc_testnet": "Deploy contracts to bsc_testnet."
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "3.1.0-solc-0.7",
+    "ethers": "5.0.8",
+    "solc": "0.7.1"
+  },
+  "devDependencies": {
+    "@nodefactory/buidler-typechain": "^0.2.0",
+    "@nomiclabs/buidler": "^1.4.5",
+    "@nomiclabs/buidler-ethers": "^2.0.0",
+    "@nomiclabs/buidler-waffle": "^2.1.0",
+    "@typechain/ethers-v5": "^1.0.0",
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.3",
+    "@types/node": "^14.6.4",
+    "buidler-deploy": "0.6.0-beta.16",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.1.0",
+    "npm-run-all": "^4.1.5",
+    "npm-scripts-info": "^0.3.9",
+    "rimraf": "^3.0.2",
+    "ts-generator": "^0.0.8",
+    "ts-node": "^9.0.0",
+    "typechain": "^2.0.0",
+    "typescript": "^4.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cartesi/tree-dlib.git"
+  },
+  "keywords": [
+    "cartesi"
+  ],
+  "files": [
+    "artifacts",
+    "contracts",
+    "deployments"
+  ],
+  "author": "Danilo Tuler <danilo@cartesi.io>",
+  "license": "Apache-2.0"
+}

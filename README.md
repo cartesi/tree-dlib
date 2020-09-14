@@ -15,7 +15,8 @@ Please note we have a [Code of Conduct](CODE_OF_CONDUCT.md), please follow it in
 * *Stephen Chen*
 
 ## License
-[PLACEHOLDER]
+The tree-dlib repository and all contributions are licensed under
+[APACHE 2.0](https://www.apache.org/licenses/LICENSE-2.0). Please review our [LICENSE](LICENSE) file.
 
 ## Acknowledgments
 
