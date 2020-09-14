@@ -15,7 +15,6 @@
     "deploy:rinkeby": "buidler deploy --network rinkeby",
     "deploy:matic_testnet": "buidler deploy --network matic_testnet",
     "deploy:bsc_testnet": "buidler deploy --network bsc_testnet",
-    "prepack": "run-s clean deploy:testnet",
     "start": "buidler node"
   },
   "scripts-info": {
@@ -68,6 +67,6 @@
     "contracts",
     "deployments"
   ],
-  "author": "Danilo Tuler <danilo@cartesi.io>",
+  "author": "Stephen Chen <stephen.chen@cartesi.io>",
   "license": "Apache-2.0"
 }
