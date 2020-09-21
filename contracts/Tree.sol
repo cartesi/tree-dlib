@@ -71,32 +71,28 @@ library TreeLibrary {
         require(_vertex < _tree.vertices.length, "vertex index exceeds current tree size");
         require(_depth <= _tree.vertices[_vertex].depth, "search depth deeper than vertex depth");
 
-        // found ancestor
-        if (_depth == _tree.vertices[_vertex].depth) {
-            return _vertex;
-        }
-
         uint32 vertex = _vertex;
-        uint32[] memory ancestorsOfVertex = _tree.vertices[_vertex].ancestors;
-        uint32 ancestorsLength = uint32(ancestorsOfVertex.length);
-        // start searching from the oldest ancestor (smallest depth)
-        // example: search ancestor at depth d(20, b'0001 0100) from vertex v at depth (176, b'1011 0000)
-        //    b'1011 0000 -> b'1010 0000 -> b'1000 0000
-        // -> b'0100 0000 -> b'0010 0000 -> b'0001 1000
-        // -> b'0001 0100
-        // TODO: optimize the search process without touching storage all the time
-        for (uint32 ancestorsIndex = ancestorsLength - 1; ancestorsIndex < ancestorsLength; --ancestorsIndex) {
-            vertex = ancestorsOfVertex[ancestorsIndex];
-            Vertex storage ancestor = _tree.vertices[vertex];
 
-            // stop at the ancestor who's closest to the target depth
-            if (ancestor.depth >= _depth) {
-                break;
+        while (_depth != _tree.vertices[vertex].depth) {
+            uint32[] memory ancestorsOfVertex = _tree.vertices[vertex].ancestors;
+            uint32 ancestorsLength = uint32(ancestorsOfVertex.length);
+            // start searching from the oldest ancestor (smallest depth)
+            // example: search ancestor at depth d(20, b'0001 0100) from vertex v at depth (176, b'1011 0000)
+            //    b'1011 0000 -> b'1010 0000 -> b'1000 0000
+            // -> b'0100 0000 -> b'0010 0000 -> b'0001 1000
+            // -> b'0001 0100
+            for (uint32 ancestorsIndex = ancestorsLength - 1; ancestorsIndex < ancestorsLength; --ancestorsIndex) {
+                vertex = ancestorsOfVertex[ancestorsIndex];
+                Vertex storage ancestor = _tree.vertices[vertex];
+
+                // stop at the ancestor who's closest to the target depth
+                if (ancestor.depth >= _depth) {
+                    break;
+                }
             }
         }
 
-        // recursive the search from the current closest ancestor
-        return getAncestorAtDepth(_tree, vertex, _depth);
+        return vertex;
     }
 
     function getRequiredDepths(uint32 _depth) private pure returns (uint32[] memory) {
