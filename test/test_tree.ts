@@ -24,9 +24,8 @@ describe("TestTree", async () => {
         const treeSize = await testTree.getTreeSize();
 
         for (let i = 0; i < treeSize; ++i) {
-            const vertex = await testTree.getVertex(i);
             expect(
-                ethers.utils.toUtf8String(vertex.data),
+                ethers.utils.toUtf8String((await testTree.getVertex(i)).data),
                 "Vertex data doesn't match"
             ).to.equal(`Vertex ${i}`);
         }
@@ -40,6 +39,7 @@ describe("TestTree", async () => {
         
         const vertex8Data = ethers.utils.toUtf8Bytes("Vertex 8");
         const vertex9Data = ethers.utils.toUtf8Bytes("Vertex 9");
+        const vertex7Depth = 7;
         const vertex7Index = 7;
         const vertex8Index = 8;
         const vertex9Index = 9;
@@ -56,15 +56,15 @@ describe("TestTree", async () => {
 
         const vertex8 = await(testTree.getVertex(vertex8Index));
 
-        await expect(
+        expect(
             vertex8.ancestors,
             "Vertex8 ancestors should match"
         ).to.deep.equal(vertex8Ancestors);
         
-        await expect(
+        expect(
             vertex8.depth,
             "Vertex8 depth should increment by 1"
-        ).to.deep.equal(vertex7Index + 1);
+        ).to.deep.equal(vertex7Depth + 1);
         
         // vertex9
         await expect(
@@ -76,14 +76,60 @@ describe("TestTree", async () => {
 
         const vertex9 = await(testTree.getVertex(vertex9Index));
 
-        await expect(
+        expect(
             vertex9.ancestors,
             "Vertex9 ancestors should match"
         ).to.deep.equal(vertex9Ancestors);
         
-        await expect(
+        expect(
             vertex9.depth,
             "Vertex9 depth should increment by 1"
-        ).to.deep.equal(vertex7Index + 1);
+        ).to.deep.equal(vertex7Depth + 1);
+    });
+    
+    it("getAncestorAtDepth", async () => {
+        const vertex8Data = ethers.utils.toUtf8Bytes("Vertex 8");
+        const vertex9Data = ethers.utils.toUtf8Bytes("Vertex 9");
+        const vertex7Index = 7;
+        const vertex8Index = 8;
+        const vertex9Index = 9;
+        const vertex8Depth = 8;
+        const vertex9Depth = 8;
+
+        // vertex8
+        await expect(
+            testTree.insertVertex(vertex7Index, vertex8Data),
+            "Insert vertex8 should emit event"
+        )
+            .to.emit(testTree, "VertexInserted")
+            .withArgs(vertex8Index);
+
+        expect(
+            await testTree.getAncestorAtDepth(vertex8Index, vertex8Depth),
+            "Ancestor at depth should match"
+        ).to.equal(vertex8Index);
+
+        expect(
+            await testTree.getAncestorAtDepth(vertex8Index, 0),
+            "Ancestor at depth should match"
+        ).to.equal(0);
+        
+        // vertex9
+        await expect(
+            testTree.insertVertex(vertex7Index, vertex9Data),
+            "Insert vertex9 should emit event"
+        )
+            .to.emit(testTree, "VertexInserted")
+            .withArgs(vertex9Index);
+
+        expect(
+            await testTree.getAncestorAtDepth(vertex9Index, vertex9Depth),
+            "Ancestor at depth should match"
+        ).to.equal(vertex9Index);
+
+        expect(
+            await testTree.getAncestorAtDepth(vertex9Index, 0),
+            "Ancestor at depth should match"
+        ).to.equal(0);
     });
 });

@@ -50,4 +50,8 @@ contract TestTree {
         return uint32(t.vertices.length);
     }
 
+    function getAncestorAtDepth(uint32 _vertex, uint32 _depth) public view returns (uint32) {
+        return t.getAncestorAtDepth(_vertex, _depth);
+    }
+
 }
