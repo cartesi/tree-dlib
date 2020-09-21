@@ -81,6 +81,10 @@ library TreeLibrary {
             //    b'1011 0000 -> b'1010 0000 -> b'1000 0000
             // -> b'0100 0000 -> b'0010 0000 -> b'0001 1000
             // -> b'0001 0100
+
+            // given that ancestorsIndex is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
+            // so the continue condition has to be ancestorsIndex < ancestorsLength,
+            // can't be ancestorsIndex >= 0
             for (uint32 ancestorsIndex = ancestorsLength - 1; ancestorsIndex < ancestorsLength; --ancestorsIndex) {
                 vertex = ancestorsOfVertex[ancestorsIndex];
                 Vertex storage ancestor = _tree.vertices[vertex];
