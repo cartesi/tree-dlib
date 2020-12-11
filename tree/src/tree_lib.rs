@@ -16,8 +16,8 @@ use std::cmp::Ordering;
 /// meaning the vertex is oldest in that `depth`
 #[derive(Clone, Debug, Eq, PartialOrd, PartialEq)]
 struct VertexKey {
-    depth: U256,
-    index: U256,
+    depth: u32,
+    index: u32,
 }
 
 impl Ord for VertexKey {
@@ -35,10 +35,10 @@ pub struct Vertex<T>
 where
     T: Clone,
 {
-    ancestors: Vec<U256>,
-    children: Vec<U256>,
+    ancestors: Vec<u32>,
+    children: Vec<u32>,
     data: T,
-    depth: U256,
+    depth: u32,
     has_pruned: bool,
 }
 
@@ -47,7 +47,7 @@ pub struct Tree <T>
 where
     T: Clone,
 {
-    vertices: HashMap<U256, Vertex<T>>,
+    vertices: HashMap<u32, Vertex<T>>,
     deepest: OrdSet<VertexKey>,
 }
 
@@ -66,12 +66,12 @@ where
     /// `onchain_get_vertex` for each index.
     pub async fn add_vertices<F>(
         &mut self,
-        new_indices: &Vec<U256>,
-        onchain_get_vertex: impl Fn(U256) -> F,
+        new_indices: &Vec<u32>,
+        onchain_get_vertex: impl Fn(u32) -> F,
     ) -> Result<()>
     where
         // (T, depth, ancestors)
-        F: Future<Output = Result<(T, U256, Vec<U256>)>>,
+        F: Future<Output = Result<(T, u32, Vec<u32>)>>,
     {
         let mut futures = vec![];
 
@@ -124,7 +124,7 @@ where
     }
 
     /// get ancestor of vertex at depth
-    pub fn get_ancestor_at(&self, index: U256, depth: U256) -> Option<Vertex<T>> {
+    pub fn get_ancestor_at(&self, index: u32, depth: u32) -> Option<Vertex<T>> {
         // TODO: should consider has_pruned?
         match self.get_vertex(index) {
             Some(v) => {
@@ -166,13 +166,13 @@ where
     }
 
     /// get vertex by index
-    pub fn get_vertex(&self, index: U256) -> Option<Vertex<T>> {
+    pub fn get_vertex(&self, index: u32) -> Option<Vertex<T>> {
         self.vertices
             .get(&index)
             .map(|vertex| vertex.clone())
     }
 
-    pub fn prune_vertex(&mut self, index: U256) {
+    pub fn prune_vertex(&mut self, index: u32) {
         if let Some(vertex) = self.vertices
             .get(&index) {
                 if !vertex.has_pruned {
@@ -196,7 +196,7 @@ where
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
 pub struct TreeState {
-    pub state: Tree<Bytes>,
+    pub state: Tree<Vec<u8>>,
 }
 
 /// Tree StateActor Delegate, which implements `sync` and `fold`.
@@ -215,7 +215,7 @@ impl StateActorDelegate for TreeStateActorDelegate {
         let mut state = Tree::new();
 
         // Get all inserted events.
-        let inserted_events: Vec<U256> = {
+        let inserted_events: Vec<u32> = {
             let inserted_events_fut = provider.get_events_until(
                 "Tree",
                 "VertexInserted",
@@ -227,8 +227,8 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
             let inserted_events_res = inserted_events_fut.await;
 
-            let inserted_events: Vec<U256> =
-                inserted_events_res?.into_iter().map(|x| x.ret).collect();
+            let inserted_events: Vec<u32> =
+                inserted_events_res?.into_iter().map(|x: Event<U256>| x.ret.as_u32()).collect();
 
             inserted_events
         };
@@ -254,7 +254,7 @@ impl StateActorDelegate for TreeStateActorDelegate {
         let mut new_state = previous_state.clone();
 
         // Get all inserted events.
-        let inserted_events: Vec<U256> = {
+        let inserted_events: Vec<u32> = {
             let inserted_events_fut = provider.get_events_at_block(
                 "Tree",
                 "VertexInserted",
@@ -266,8 +266,8 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
             let inserted_events_res = inserted_events_fut.await;
 
-            let inserted_events: Vec<U256> =
-                inserted_events_res?.into_iter().map(|x| x.ret).collect();
+            let inserted_events: Vec<u32> =
+                inserted_events_res?.into_iter().map(|x: Event<U256>| x.ret.as_u32()).collect();
 
             inserted_events
         };
@@ -285,10 +285,10 @@ impl StateActorDelegate for TreeStateActorDelegate {
 }
 
 pub async fn onchain_get_vertex<T: FoldProvider>(
-    index: U256,
+    index: u32,
     block_hash: H256,
     provider: &T,
-) -> Result<(Bytes, U256, Vec<U256>)> {
+) -> Result<(Vec<u8>, u32, Vec<u32>)> {
     /*
     struct Vertex {
             uint32[] ancestors; // pointers to ancestors' indices in the vertices array (tree)
@@ -315,14 +315,21 @@ pub async fn onchain_get_vertex<T: FoldProvider>(
         },
     };
 
-    let (ancestors, depth, data): (Vec<U256>, U256, Bytes) = {
-        let a: Vec<U256> = v[0].clone().to_array().unwrap()
+    let (ancestors, depth, data): (Vec<u32>, u32, Vec<u8>) = {
+        let a = v[0].clone()
+            .to_array()
+            .unwrap()
             .into_iter()
-            .map(|x| x.to_uint().unwrap())
+            .map(|x| x.to_uint().unwrap().as_u32())
             .collect();
-        let d = v[1].clone().to_uint().unwrap();
-        let b = v[2].clone().to_bytes().unwrap();
-        (a, d, Bytes(b))
+        let d = v[1].clone()
+            .to_uint()
+            .unwrap()
+            .as_u32();
+        let b = v[2].clone()
+            .to_bytes()
+            .unwrap();
+        (a, d, b)
     };
     
     Ok((data, depth, ancestors))

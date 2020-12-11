@@ -87,16 +87,16 @@ async fn tree_state_test() {
 
     let mut state = unwrap_state(messages.recv().await.unwrap());
 
-    println!("Vertex6 before: {:?}", state.state.get_vertex(U256::from(6)));
-    println!("Vertex7 before: {:?}", state.state.get_vertex(U256::from(7)));
-    println!("Vertex8 before: {:?}", state.state.get_vertex(U256::from(8)));
+    println!("Vertex6 before: {:?}", state.state.get_vertex(6));
+    println!("Vertex7 before: {:?}", state.state.get_vertex(7));
+    println!("Vertex8 before: {:?}", state.state.get_vertex(8));
     // println!("Deepest: {:?}", state.state.get_deepest());
     // println!("TreeState: {:?}", state);
 
-    state.state.prune_vertex(U256::from(6));
-    println!("Vertex6 after: {:?}", state.state.get_vertex(U256::from(6)));
-    println!("Vertex7 after: {:?}", state.state.get_vertex(U256::from(7)));
-    println!("Vertex8 after: {:?}", state.state.get_vertex(U256::from(8)));
+    state.state.prune_vertex(6);
+    println!("Vertex6 after: {:?}", state.state.get_vertex(6));
+    println!("Vertex7 after: {:?}", state.state.get_vertex(7));
+    println!("Vertex8 after: {:?}", state.state.get_vertex(8));
 
     // kill actor
     kill_switch
