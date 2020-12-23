@@ -1,15 +1,9 @@
-use async_trait::async_trait;
 use state_actor::error::*;
-use state_actor::types::*;
 
 use futures::future::join_all;
-use std::future::Future;
-
-use ethabi::Token;
 use im::{HashMap, OrdSet};
-use web3::types::{Bytes, H256, U256, U64};
-
 use std::cmp::Ordering;
+use std::future::Future;
 
 /// `index` is the unique identifier to each vertex while `depth` is used for sorting.
 /// The deepest vertex is defined as largest `depth`, and smallest `index` when the `depth`s are equal,
@@ -43,7 +37,7 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct Tree <T>
+pub struct Tree<T>
 where
     T: Clone,
 {
@@ -51,7 +45,7 @@ where
     deepest: OrdSet<VertexKey>,
 }
 
-impl<T> Tree <T>
+impl<T> Tree<T>
 where
     T: Clone,
 {
@@ -104,20 +98,15 @@ where
 
             self.vertices.insert(
                 index,
-                Vertex{
+                Vertex {
                     ancestors: v.2,
                     children: vec![],
                     data: v.0,
                     depth: v.1,
                     has_pruned: false,
-                }
-            );
-            self.deepest.insert(
-                VertexKey {
-                    depth: v.1,
-                    index,
                 },
             );
+            self.deepest.insert(VertexKey { depth: v.1, index });
         }
 
         Ok(())
@@ -148,189 +137,40 @@ where
                     // TODO: should be an error? panic?
                     None
                 }
-            },
+            }
             // vertex not found with given index
             None => None,
         }
-
     }
-    
+
     /// get deepest vertex
     pub fn get_deepest(&self) -> Option<Vertex<T>> {
         match self.deepest.get_max() {
-            Some(k) => self.vertices
-                        .get(&k.index)
-                        .map(|vertex| vertex.clone()),
+            Some(k) => self.vertices.get(&k.index).map(|vertex| vertex.clone()),
             None => None,
         }
     }
 
     /// get vertex by index
     pub fn get_vertex(&self, index: u32) -> Option<Vertex<T>> {
-        self.vertices
-            .get(&index)
-            .map(|vertex| vertex.clone())
+        self.vertices.get(&index).map(|vertex| vertex.clone())
     }
 
     pub fn prune_vertex(&mut self, index: u32) {
-        if let Some(vertex) = self.vertices
-            .get(&index) {
-                if !vertex.has_pruned {
-                    let mut v = vertex.clone();
-                    let children = vertex.children.clone();
+        if let Some(vertex) = self.vertices.get(&index) {
+            if !vertex.has_pruned {
+                let mut v = vertex.clone();
+                let children = vertex.children.clone();
 
-                    // prune children recursively
-                    for child in children {
-                        self.prune_vertex(child);
-                    }
-
-                    // prune vertex
-                    v.has_pruned = true;
-                    self.vertices.insert(index, v);
+                // prune children recursively
+                for child in children {
+                    self.prune_vertex(child);
                 }
-        }
-    }
-}
 
-
-/// Tree dlib state, to be passed to and returned by fold.
-#[derive(Clone, Debug)]
-pub struct TreeState {
-    pub state: Tree<Vec<u8>>,
-}
-
-/// Tree StateActor Delegate, which implements `sync` and `fold`.
-pub struct TreeStateActorDelegate {}
-
-#[async_trait]
-impl StateActorDelegate for TreeStateActorDelegate {
-    type State = TreeState;
-
-    async fn sync<T: SyncProvider>(
-        &self,
-        block_number: U64,
-        provider: &T,
-    ) -> Result<Self::State> {
-        let block_hash = provider.get_block_hash(block_number).await?;
-        let mut state = Tree::new();
-
-        // Get all inserted events.
-        let inserted_events: Vec<u32> = {
-            let inserted_events_fut = provider.get_events_until(
-                "Tree",
-                "VertexInserted",
-                (),
-                (),
-                (),
-                block_number,
-            );
-
-            let inserted_events_res = inserted_events_fut.await;
-
-            let inserted_events: Vec<u32> =
-                inserted_events_res?.into_iter().map(|x: Event<U256>| x.ret.as_u32()).collect();
-
-            inserted_events
-        };
-
-        // Add all previous vertices to the state
-        state
-            .add_vertices(&inserted_events, |x| {
-                onchain_get_vertex(x, block_hash, provider)
-            })
-            .await?;
-
-        Ok(TreeState {
-            state,
-        })
-    }
-
-    async fn fold<T: FoldProvider>(
-        &self,
-        previous_state: &Self::State,
-        block_hash: H256,
-        provider: &T,
-    ) -> Result<Self::State> {
-        let mut new_state = previous_state.clone();
-
-        // Get all inserted events.
-        let inserted_events: Vec<u32> = {
-            let inserted_events_fut = provider.get_events_at_block(
-                "Tree",
-                "VertexInserted",
-                (),
-                (),
-                (),
-                block_hash,
-            );
-
-            let inserted_events_res = inserted_events_fut.await;
-
-            let inserted_events: Vec<u32> =
-                inserted_events_res?.into_iter().map(|x: Event<U256>| x.ret.as_u32()).collect();
-
-            inserted_events
-        };
-
-        // Add new vertex to the state
-        new_state
-            .state
-            .add_vertices(&inserted_events, |x| {
-                onchain_get_vertex(x, block_hash, provider)
-            })
-            .await?;
-
-        Ok(new_state)
-    }
-}
-
-pub async fn onchain_get_vertex<T: FoldProvider>(
-    index: u32,
-    block_hash: H256,
-    provider: &T,
-) -> Result<(Vec<u8>, u32, Vec<u32>)> {
-    /*
-    struct Vertex {
-            uint32[] ancestors; // pointers to ancestors' indices in the vertices array (tree)
-            uint32 depth; // depth of the vertex in the tree
-            bytes data; // data holding in the vertex
-        }
-    */
-    let v = match provider
-        .query(
-            "Tree",
-            "getVertex",
-            index,
-            None,
-            block_hash,
-        )
-        .await?
-    {
-        Token::Tuple(t) => t,
-        _ => {
-            return BlockchainInconsistent {
-                err: "Unrecognized vertex structure",
+                // prune vertex
+                v.has_pruned = true;
+                self.vertices.insert(index, v);
             }
-            .fail()
-        },
-    };
-
-    let (ancestors, depth, data): (Vec<u32>, u32, Vec<u8>) = {
-        let a = v[0].clone()
-            .to_array()
-            .unwrap()
-            .into_iter()
-            .map(|x| x.to_uint().unwrap().as_u32())
-            .collect();
-        let d = v[1].clone()
-            .to_uint()
-            .unwrap()
-            .as_u32();
-        let b = v[2].clone()
-            .to_bytes()
-            .unwrap();
-        (a, d, b)
-    };
-    
-    Ok((data, depth, ancestors))
+        }
+    }
 }
