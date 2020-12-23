@@ -11,3 +11,6 @@ jobs:
       - run: yarn install
       - run: npx buidler typechain
       - run: yarn test
+      
+      - name: Check code format
+        run: cd tree && cargo fmt -p tree -- --check
