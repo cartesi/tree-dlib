@@ -2,11 +2,12 @@ use async_trait::async_trait;
 use dispatcher::Actor;
 use state_actor::error::*;
 use state_actor::types::*;
-use tree::tree_lib::Tree;
+use tree::tree_lib::{Tree, Vertex};
 
 use ethabi::Token;
 use web3::types::{Bytes, TransactionRequest, H256, U256, U64};
 
+use futures::future::join_all;
 use tokio::sync::{mpsc, watch};
 
 // $ geth --dev --http --http.api eth,net,web3
@@ -59,12 +60,20 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
+        let mut futures = vec![];
+
+        for index in inserted_events {
+            let future = {
+                let idx = index.clone();
+                let vertex = onchain_get_vertex(index, block_hash, provider).await?;
+                async move { (idx, vertex) }
+            };
+            futures.push(future);
+        }
+        let vertices = join_all(futures).await;
+
         // Add all previous vertices to the state
-        state
-            .add_vertices(&inserted_events, |x| {
-                onchain_get_vertex(x, block_hash, provider)
-            })
-            .await?;
+        state.add_vertices(vertices).await?;
 
         Ok(TreeState { state })
     }
@@ -92,13 +101,20 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
+        let mut futures = vec![];
+
+        for index in inserted_events {
+            let future = {
+                let idx = index.clone();
+                let vertex = onchain_get_vertex(index, block_hash, provider).await?;
+                async move { (idx, vertex) }
+            };
+            futures.push(future);
+        }
+        let vertices = join_all(futures).await;
+
         // Add new vertex to the state
-        new_state
-            .state
-            .add_vertices(&inserted_events, |x| {
-                onchain_get_vertex(x, block_hash, provider)
-            })
-            .await?;
+        new_state.state.add_vertices(vertices).await?;
 
         Ok(new_state)
     }
@@ -108,7 +124,7 @@ pub async fn onchain_get_vertex<T: FoldProvider>(
     index: u32,
     block_hash: H256,
     provider: &T,
-) -> Result<(Vec<u8>, u32, Vec<u32>)> {
+) -> Result<Vertex<Vec<u8>>> {
     /*
     struct Vertex {
             uint32[] ancestors; // pointers to ancestors' indices in the vertices array (tree)
@@ -142,7 +158,13 @@ pub async fn onchain_get_vertex<T: FoldProvider>(
         (a, d, b)
     };
 
-    Ok((data, depth, ancestors))
+    Ok(Vertex {
+        ancestors: ancestors,
+        children: vec![],
+        data: data,
+        depth: depth,
+        has_pruned: false,
+    })
 }
 
 /// Tests

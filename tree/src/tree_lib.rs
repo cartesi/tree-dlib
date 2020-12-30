@@ -1,9 +1,7 @@
 use state_actor::error::*;
 
-use futures::future::join_all;
-use im::{HashMap, OrdSet};
+use im::{OrdSet, Vector};
 use std::cmp::Ordering;
-use std::future::Future;
 
 /// `index` is the unique identifier to each vertex while `depth` is used for sorting.
 /// The deepest vertex is defined as largest `depth`, and smallest `index` when the `depth`s are equal,
@@ -29,11 +27,11 @@ pub struct Vertex<T>
 where
     T: Clone,
 {
-    ancestors: Vec<u32>,
-    children: Vec<u32>,
-    data: T,
-    depth: u32,
-    has_pruned: bool,
+    pub ancestors: Vec<u32>,
+    pub children: Vec<u32>,
+    pub data: T,
+    pub depth: u32,
+    pub has_pruned: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -41,7 +39,7 @@ pub struct Tree<T>
 where
     T: Clone,
 {
-    vertices: HashMap<u32, Vertex<T>>,
+    vertices: Vector<Vertex<T>>,
     deepest: OrdSet<VertexKey>,
 }
 
@@ -51,62 +49,37 @@ where
 {
     pub fn new() -> Self {
         Tree {
-            vertices: HashMap::new(),
+            vertices: Vector::new(),
             deepest: OrdSet::new(),
         }
     }
 
-    /// Adds vertices with index `new_vertices` to the tree, calling
-    /// `onchain_get_vertex` for each index.
-    pub async fn add_vertices<F>(
-        &mut self,
-        new_indices: &Vec<u32>,
-        onchain_get_vertex: impl Fn(u32) -> F,
-    ) -> Result<()>
-    where
-        // (T, depth, ancestors)
-        F: Future<Output = Result<(T, u32, Vec<u32>)>>,
-    {
-        let mut futures = vec![];
-
-        for new_index in new_indices {
-            let future = {
-                let idx = new_index.clone();
-                let vertex = onchain_get_vertex(idx.clone());
-                async move { (idx, vertex.await) }
-            };
-            futures.push(future);
-        }
-
-        let vertices = join_all(futures).await;
-
-        for (index, vertex) in vertices {
-            let v = vertex?;
-
-            if let Some(parent_index) = v.2.get(0) {
+    /// Adds vertices with index `new_vertices` to the tree
+    pub async fn add_vertices(&mut self, new_vertices: Vec<(u32, Vertex<T>)>) -> Result<()> {
+        for (index, mut vertex) in new_vertices {
+            if index as usize != self.vertices.len() {
+                return BlockchainInconsistent {
+                    err: "Inconsistent tree size",
+                }
+                .fail();
+            }
+            if let Some(parent_index) = vertex.ancestors.get(0) {
                 if let Some(mut parent) = self.get_vertex(*parent_index) {
                     if parent.has_pruned {
-                        // ignore adding vertex to pruned parent
-                        continue;
-                    } else {
-                        // update children list of parent
-                        parent.children.push(index);
-                        self.vertices.insert(*parent_index, parent);
+                        // prune vertex if parent is pruned
+                        vertex.has_pruned = true;
                     }
+                    // update children list of parent
+                    parent.children.push(index);
+                    self.vertices.set(*parent_index as usize, parent);
                 }
             }
 
-            self.vertices.insert(
+            self.deepest.insert(VertexKey {
+                depth: vertex.depth,
                 index,
-                Vertex {
-                    ancestors: v.2,
-                    children: vec![],
-                    data: v.0,
-                    depth: v.1,
-                    has_pruned: false,
-                },
-            );
-            self.deepest.insert(VertexKey { depth: v.1, index });
+            });
+            self.vertices.push_back(vertex);
         }
 
         Ok(())
@@ -146,18 +119,23 @@ where
     /// get deepest vertex
     pub fn get_deepest(&self) -> Option<Vertex<T>> {
         match self.deepest.get_max() {
-            Some(k) => self.vertices.get(&k.index).map(|vertex| vertex.clone()),
+            Some(k) => self
+                .vertices
+                .get(k.index as usize)
+                .map(|vertex| vertex.clone()),
             None => None,
         }
     }
 
     /// get vertex by index
     pub fn get_vertex(&self, index: u32) -> Option<Vertex<T>> {
-        self.vertices.get(&index).map(|vertex| vertex.clone())
+        self.vertices
+            .get(index as usize)
+            .map(|vertex| vertex.clone())
     }
 
     pub fn prune_vertex(&mut self, index: u32) {
-        if let Some(vertex) = self.vertices.get(&index) {
+        if let Some(vertex) = self.vertices.get(index as usize) {
             if !vertex.has_pruned {
                 let mut v = vertex.clone();
                 let children = vertex.children.clone();
@@ -169,7 +147,7 @@ where
 
                 // prune vertex
                 v.has_pruned = true;
-                self.vertices.insert(index, v);
+                self.vertices.set(index as usize, v);
             }
         }
     }
