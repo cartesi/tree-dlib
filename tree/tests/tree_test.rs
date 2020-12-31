@@ -8,6 +8,7 @@ use ethabi::Token;
 use web3::types::{Bytes, TransactionRequest, H256, U256, U64};
 
 use futures::future::join_all;
+use snafu::ResultExt;
 use tokio::sync::{mpsc, watch};
 
 // $ geth --dev --http --http.api eth,net,web3
@@ -146,15 +147,59 @@ pub async fn onchain_get_vertex<T: FoldProvider>(
     };
 
     let (ancestors, depth, data): (Vec<u32>, u32, Vec<u8>) = {
-        let a = v[0]
+        let a_token = v
+            .get(0)
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot get vertex ancestors array",
+            })?
             .clone()
             .to_array()
-            .unwrap()
-            .into_iter()
-            .map(|x| x.to_uint().unwrap().as_u32())
-            .collect();
-        let d = v[1].clone().to_uint().unwrap().as_u32();
-        let b = v[2].clone().to_bytes().unwrap();
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot convert vertex ancestors array",
+            })?;
+        let a = {
+            let mut a = vec![];
+            for ancestor in a_token {
+                a.push(
+                    ancestor
+                        .to_uint()
+                        .ok_or(snafu::NoneError)
+                        .context(BlockchainInconsistent {
+                            err: "Cannot get vertex ancestor",
+                        })?
+                        .as_u32(),
+                )
+            }
+            a
+        };
+        let d = v
+            .get(1)
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot get vertex depth",
+            })?
+            .clone()
+            .to_uint()
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot convert vertex depth",
+            })?
+            .as_u32();
+
+        let b = v
+            .get(2)
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot get vertex data",
+            })?
+            .clone()
+            .to_bytes()
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "Cannot convert vertex data",
+            })?;
         (a, d, b)
     };
 
