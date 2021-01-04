@@ -271,7 +271,7 @@ async fn tree_state_test() {
     println!("Vertex6 before: {:?}", state.state.get_vertex(6));
     println!("Vertex7 before: {:?}", state.state.get_vertex(7));
     println!("Vertex8 before: {:?}", state.state.get_vertex(8));
-    // println!("Deepest: {:?}", state.state.get_deepest());
+    println!("Deepest: {:?}", state.state.get_deepest());
     // println!("TreeState: {:?}", state);
 
     state.state.prune_vertex(6);

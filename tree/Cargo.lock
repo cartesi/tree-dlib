@@ -475,6 +475,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
+
+[[package]]
 name = "http"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1686,7 +1692,8 @@ checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 [[package]]
 name = "web3"
 version = "0.14.0"
-source = "git+https://github.com/tomusdrw/rust-web3#1818294ff3a790932cfdb8941499f1ede2116a02"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c736dcabf7a4d4b9e724ff6696914e205cb37f111a54903b17f76c20d59f7e6"
 dependencies = [
  "arrayvec",
  "async-native-tls",
@@ -1696,6 +1703,7 @@ dependencies = [
  "ethereum-types",
  "futures 0.3.8",
  "futures-timer",
+ "hex",
  "hyper",
  "hyper-proxy",
  "hyper-tls",
@@ -1705,7 +1713,6 @@ dependencies = [
  "parking_lot",
  "pin-project 1.0.2",
  "rlp",
- "rustc-hex",
  "secp256k1",
  "serde",
  "serde_json",

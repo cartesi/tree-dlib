@@ -117,12 +117,12 @@ where
     }
 
     /// get deepest vertex
-    pub fn get_deepest(&self) -> Option<Vertex<T>> {
+    pub fn get_deepest(&self) -> Option<(u32, Vertex<T>)> {
         match self.deepest.get_max() {
             Some(k) => self
                 .vertices
                 .get(k.index as usize)
-                .map(|vertex| vertex.clone()),
+                .map(|vertex| (k.index, vertex.clone())),
             None => None,
         }
     }
