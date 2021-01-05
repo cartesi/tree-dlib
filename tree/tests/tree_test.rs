@@ -235,11 +235,9 @@ async fn tree_state_test() {
     let (kill_switch, kill_rx) = watch::channel(dispatcher::KillSwitchStatus::Normal);
 
     let handle = tree_actor.start(msg_tx, kill_rx).await.unwrap();
+    let test_data = "test vertex from rust".as_bytes().to_vec();
 
-    let input_tokens = vec![
-        Token::Uint(U256::from(6)),
-        Token::Bytes("test vertex from rust".as_bytes().to_vec()),
-    ];
+    let input_tokens = vec![Token::Uint(U256::from(6)), Token::Bytes(test_data.clone())];
 
     let data = contract_data[0]
         .abi
@@ -268,16 +266,20 @@ async fn tree_state_test() {
 
     let mut state = unwrap_state(messages.recv().await.unwrap());
 
-    println!("Vertex6 before: {:?}", state.state.get_vertex(6));
-    println!("Vertex7 before: {:?}", state.state.get_vertex(7));
-    println!("Vertex8 before: {:?}", state.state.get_vertex(8));
-    println!("Deepest: {:?}", state.state.get_deepest());
-    // println!("TreeState: {:?}", state);
+    let v7 = state.state.get_vertex(7).unwrap();
+    let v8 = state.state.get_vertex(8).unwrap();
+
+    assert_eq!(v8.ancestors, [6]);
+    assert_eq!(v8.children.len(), 0);
+    assert_eq!(v8.data, test_data);
+    assert_eq!(v8.has_pruned, false);
+
+    let deepest = state.state.get_deepest().unwrap();
+    assert_eq!(v7, deepest.1);
 
     state.state.prune_vertex(6);
-    println!("Vertex6 after: {:?}", state.state.get_vertex(6));
-    println!("Vertex7 after: {:?}", state.state.get_vertex(7));
-    println!("Vertex8 after: {:?}", state.state.get_vertex(8));
+    let pruned_v8 = state.state.get_vertex(8).unwrap();
+    assert_eq!(pruned_v8.has_pruned, true);
 
     // kill actor
     kill_switch

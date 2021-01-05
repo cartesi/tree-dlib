@@ -22,7 +22,7 @@ impl Ord for VertexKey {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Vertex<T>
 where
     T: Clone,
