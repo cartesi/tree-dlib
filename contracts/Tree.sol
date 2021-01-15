@@ -10,7 +10,6 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-
 /// @title Library for Tree service
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -27,7 +26,8 @@ library TreeLibrary {
         bytes data; // data holding in the vertex
     }
 
-    event VertexInserted(uint32 _vertex);
+    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
+    // event VertexInserted(uint32 _index, Vertex _vertex);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
@@ -42,7 +42,10 @@ library TreeLibrary {
             v = Vertex(new uint32[](0), 0, _data);
         } else {
             // insert vertex to the tree attaching to another vertex
-            require(_parent < _tree.vertices.length, "parent index exceeds current tree size");
+            require(
+                _parent < _tree.vertices.length,
+                "parent index exceeds current tree size"
+            );
 
             uint32 parentDepth = _tree.vertices[_parent].depth;
             // calculate all ancestors' depths of the new vertex
@@ -51,14 +54,23 @@ library TreeLibrary {
 
             // construct the ancestors array by getting index of each ancestor in requiredDepths
             for (uint32 i = 0; i < requiredDepths.length; ++i) {
-                ancestors[i] = getAncestorAtDepth(_tree, _parent, requiredDepths[i]);
+                ancestors[i] = getAncestorAtDepth(
+                    _tree,
+                    _parent,
+                    requiredDepths[i]
+                );
             }
 
             v = Vertex(ancestors, parentDepth + 1, _data);
         }
 
         _tree.vertices.push(v);
-        emit VertexInserted(uint32(_tree.vertices.length - 1));
+        emit VertexInserted(
+            uint32(_tree.vertices.length - 1),
+            _parent,
+            v.depth,
+            _data
+        );
     }
 
     /// @notice Search an ancestor of a vertex in the tree at a certain depth

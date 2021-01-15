@@ -10,7 +10,6 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-
 /// @title Library for Tree service
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
@@ -22,7 +21,8 @@ contract TestTree {
     using TreeLibrary for TreeLibrary.Tree;
     TreeLibrary.Tree t;
 
-    event VertexInserted(uint32 _vertex);
+    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
+    // event VertexInserted(uint32 _index, TreeLibrary.Vertex _vertex);
 
     constructor() {
         t.insertVertex(0, "Vertex 0"); // first vertex, the parent index is ignored
@@ -40,8 +40,15 @@ contract TestTree {
         t.insertVertex(_parent, _data);
     }
 
-    function getVertex(uint32 _vertex) public view returns (TreeLibrary.Vertex memory) {
-        require(_vertex < t.vertices.length, "vertex index exceeds current tree size");
+    function getVertex(uint32 _vertex)
+        public
+        view
+        returns (TreeLibrary.Vertex memory)
+    {
+        require(
+            _vertex < t.vertices.length,
+            "vertex index exceeds current tree size"
+        );
 
         return t.vertices[_vertex];
     }
@@ -53,5 +60,4 @@ contract TestTree {
     function getAncestorAtDepth(uint32 _vertex, uint32 _depth) public view returns (uint32) {
         return t.getAncestorAtDepth(_vertex, _depth);
     }
-
 }
