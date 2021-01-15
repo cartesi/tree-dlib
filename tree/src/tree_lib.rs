@@ -1,7 +1,9 @@
 use state_actor::error::*;
 
-use im::{OrdSet, Vector};
+use im::{HashMap, OrdSet};
+use snafu::ResultExt;
 use std::cmp::Ordering;
+use std::sync::Arc;
 
 /// `index` is the unique identifier to each vertex while `depth` is used for sorting.
 /// The deepest vertex is defined as largest `depth`, and smallest `index` when the `depth`s are equal,
@@ -27,11 +29,12 @@ pub struct Vertex<T>
 where
     T: Clone,
 {
-    pub ancestors: Vec<u32>,
-    pub children: Vec<u32>,
+    // pub ancestors: Vec<u32>,
+    // pub children: Vec<u32>,
     pub data: T,
     pub depth: u32,
-    pub has_pruned: bool,
+    pub parent: Option<u32>,
+    // pub has_pruned: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -39,7 +42,7 @@ pub struct Tree<T>
 where
     T: Clone,
 {
-    vertices: Vector<Vertex<T>>,
+    vertices: HashMap<u32, Arc<Vertex<T>>>,
     deepest: OrdSet<VertexKey>,
 }
 
@@ -49,106 +52,66 @@ where
 {
     pub fn new() -> Self {
         Tree {
-            vertices: Vector::new(),
+            vertices: HashMap::new(),
             deepest: OrdSet::new(),
         }
     }
 
-    /// Adds vertices with index `new_vertices` to the tree
-    pub async fn add_vertices(&mut self, new_vertices: Vec<(u32, Vertex<T>)>) -> Result<()> {
-        for (index, mut vertex) in new_vertices {
-            if index as usize != self.vertices.len() {
-                return BlockchainInconsistent {
-                    err: "Inconsistent tree size",
-                }
-                .fail();
-            }
-            if let Some(parent_index) = vertex.ancestors.get(0) {
-                if let Some(mut parent) = self.get_vertex(*parent_index) {
-                    if parent.has_pruned {
-                        // prune vertex if parent is pruned
-                        vertex.has_pruned = true;
-                    }
-                    // update children list of parent
-                    parent.children.push(index);
-                    self.vertices.set(*parent_index as usize, parent);
-                }
-            }
+    /// Adds vertex with `new_vertex` to the tree
+    pub fn add_vertex(&self, new_vertex: (u32, Vertex<T>)) -> Result<Self> {
+        let (index, vertex) = (new_vertex.0, new_vertex.1);
 
-            self.deepest.insert(VertexKey {
-                depth: vertex.depth,
-                index,
-            });
-            self.vertices.push_back(vertex);
+        if index as usize != self.vertices.len() {
+            return BlockchainInconsistent {
+                err: "Inconsistent tree size",
+            }
+            .fail();
         }
 
-        Ok(())
+        let new_deepest = self.deepest.update(VertexKey {
+            depth: vertex.depth,
+            index,
+        });
+
+        let new_vertices = self.vertices.update(index, Arc::new(vertex));
+
+        Ok(Tree {
+            deepest: new_deepest,
+            vertices: new_vertices,
+        })
     }
 
-    /// get ancestor of vertex at depth
-    pub fn get_ancestor_at(&self, index: u32, depth: u32) -> Option<Vertex<T>> {
-        // TODO: should consider has_pruned?
-        match self.get_vertex(index) {
-            Some(v) => {
-                if v.depth < depth {
-                    // vertex must be deeper that ancestor
+    /// get index of ancestor of vertex at depth
+    pub fn get_ancestor_at(&self, index: u32, depth: u32) -> Result<u32> {
+        self.get_vertex(index)
+            .and_then(|v| {
+                if v.depth == depth {
+                    Some(index)
+                } else if v.depth < depth {
                     None
-                } else if v.depth == depth {
-                    // ancestor found
-                    Some(v)
                 } else {
-                    // start jumping from oldest ancestor
-                    for ancestor in v.ancestors.into_iter().rev() {
-                        if let Some(anc) = self.get_vertex(ancestor) {
-                            // closest ancestor found, recursive the search from there
-                            if anc.depth >= depth {
-                                return self.get_ancestor_at(ancestor, depth);
-                            }
-                        }
-                    }
-                    // no ancestor at depth
-                    // TODO: should be an error? panic?
-                    None
+                    v.parent
+                        .and_then(|parent| self.get_ancestor_at(parent, depth).ok())
                 }
-            }
-            // vertex not found with given index
-            None => None,
-        }
+            })
+            .ok_or(snafu::NoneError)
+            .context(BlockchainInconsistent {
+                err: "No ancestor at target depth",
+            })
     }
 
-    /// get deepest vertex
-    pub fn get_deepest(&self) -> Option<(u32, Vertex<T>)> {
-        match self.deepest.get_max() {
-            Some(k) => self
-                .vertices
-                .get(k.index as usize)
-                .map(|vertex| (k.index, vertex.clone())),
-            None => None,
-        }
+    /// get index of deepest vertex
+    pub fn get_deepest(&self) -> Option<u32> {
+        self.deepest.get_max().and_then(|key| Some(key.index))
     }
 
     /// get vertex by index
-    pub fn get_vertex(&self, index: u32) -> Option<Vertex<T>> {
-        self.vertices
-            .get(index as usize)
-            .map(|vertex| vertex.clone())
+    pub fn get_vertex(&self, index: u32) -> Option<&Vertex<T>> {
+        self.vertices.get(&index).map(|vertex| Arc::as_ref(vertex))
     }
 
-    pub fn prune_vertex(&mut self, index: u32) {
-        if let Some(vertex) = self.vertices.get(index as usize) {
-            if !vertex.has_pruned {
-                let mut v = vertex.clone();
-                let children = vertex.children.clone();
-
-                // prune children recursively
-                for child in children {
-                    self.prune_vertex(child);
-                }
-
-                // prune vertex
-                v.has_pruned = true;
-                self.vertices.set(index as usize, v);
-            }
-        }
+    /// get vertex by index with reference counter
+    pub fn get_vertex_rc(&self, index: u32) -> Option<Arc<Vertex<T>>> {
+        self.vertices.get(&index).map(|vertex| Arc::clone(vertex))
     }
 }
