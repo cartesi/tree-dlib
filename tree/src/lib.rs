@@ -20,4 +20,5 @@
 // rewritten, the entire component will be released under the Apache v2 license.
 
 #![warn(unused_extern_crates)]
+pub mod error;
 pub mod tree_lib;

@@ -1,4 +1,4 @@
-use state_actor::error::*;
+use crate::error::*;
 
 use im::{HashMap, OrdSet};
 use snafu::ResultExt;
@@ -29,12 +29,9 @@ pub struct Vertex<T>
 where
     T: Clone,
 {
-    // pub ancestors: Vec<u32>,
-    // pub children: Vec<u32>,
     pub data: T,
     pub depth: u32,
-    pub parent: Option<u32>,
-    // pub has_pruned: bool,
+    pub parent: Option<Arc<Vertex<T>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -57,22 +54,36 @@ where
         }
     }
 
-    /// Adds vertex with `new_vertex` to the tree
-    pub fn add_vertex(&self, new_vertex: (u32, Vertex<T>)) -> Result<Self> {
-        let (index, vertex) = (new_vertex.0, new_vertex.1);
+    /// Adds vertex with `event` to the tree
+    /// event (uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
+    pub fn add_vertex(&self, event: (u32, u32, u32, T)) -> Result<Self> {
+        let (index, parent_index, depth, data) = (event.0, event.1, event.2, event.3);
 
         if index as usize != self.vertices.len() {
-            return BlockchainInconsistent {
-                err: "Inconsistent tree size",
+            return TreeMalformed {
+                err: "Incoming vertex doesn't match current tree size",
             }
             .fail();
         }
 
-        let new_deepest = self.deepest.update(VertexKey {
-            depth: vertex.depth,
-            index,
-        });
+        let mut parent = self.get_vertex_rc(parent_index);
+        if index == 0 {
+            // set parent to none for genesis block
+            parent = None;
+        } else if parent.is_none() {
+            return TreeMalformed {
+                err: "Incoming vertex doesn't have a valid parent",
+            }
+            .fail();
+        }
 
+        let new_deepest = self.deepest.update(VertexKey { depth, index });
+
+        let vertex: Vertex<T> = Vertex {
+            depth,
+            data,
+            parent,
+        };
         let new_vertices = self.vertices.update(index, Arc::new(vertex));
 
         Ok(Tree {
@@ -81,23 +92,45 @@ where
         })
     }
 
-    /// get index of ancestor of vertex at depth
-    pub fn get_ancestor_at(&self, index: u32, depth: u32) -> Result<u32> {
-        self.get_vertex(index)
-            .and_then(|v| {
-                if v.depth == depth {
-                    Some(index)
-                } else if v.depth < depth {
-                    None
-                } else {
-                    v.parent
-                        .and_then(|parent| self.get_ancestor_at(parent, depth).ok())
-                }
-            })
-            .ok_or(snafu::NoneError)
-            .context(BlockchainInconsistent {
-                err: "No ancestor at target depth",
-            })
+    /// get ancestor of vertex at depth
+    pub fn get_ancestor_rc_at(&self, index: u32, depth: u32) -> Result<Arc<Vertex<T>>> {
+        let vertex = self.get_vertex_rc(index);
+
+        if vertex.is_none() {
+            // vertex not exist at index
+            return VertexNotFound {
+                err: "Invalid index",
+            }
+            .fail();
+        }
+
+        let v = vertex.unwrap();
+        let vertex_depth = v.depth;
+
+        if vertex_depth == depth {
+            // vertex at index is the ancestor at depth itself
+            return Ok(v);
+        } else if vertex_depth < depth {
+            // invalid index or depth
+            return VertexNotFound {
+                err: "Vertex is not deeper than ancestor",
+            }
+            .fail();
+        } else {
+            let mut parent = v.parent.clone();
+
+            // looping through the parent until it reaches `depth` or none
+            while parent.is_some() && parent.clone().unwrap().depth > depth {
+                parent = parent.unwrap().parent.clone();
+            }
+
+            parent
+                .filter(|p| p.depth == depth)
+                .ok_or(snafu::NoneError)
+                .context(TreeMalformed {
+                    err: "Ancestor at depth not found",
+                })
+        }
     }
 
     /// get index of deepest vertex

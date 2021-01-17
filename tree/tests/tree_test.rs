@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use dispatcher::Actor;
 use state_actor::error::*;
 use state_actor::types::*;
-use tree::tree_lib::{Tree, Vertex};
+use tree::tree_lib::Tree;
 
 use ethabi::Token;
 use web3::types::{Bytes, TransactionRequest, H256, U256, U64};
@@ -67,29 +67,15 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
-        let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
-            .into_iter()
-            .map(|x| {
-                let parent = if (x.0 == 0 && x.1 == 0) {
-                    None
-                } else {
-                    Some(x.1)
-                };
-                (
-                    x.0,
-                    Vertex {
-                        parent,
-                        depth: x.2,
-                        data: x.3,
-                    },
-                )
-            })
-            .collect();
-
         // Add all previous vertices to the state
-        for vertex in vertices {
+        for event in inserted_events {
             // Add new vertex to the state
-            state = state.add_vertex(vertex)?
+            state = state.add_vertex(event).map_err(|e| {
+                BlockchainInconsistent {
+                    err: format!("Cannot add vertex to tree state {}", e),
+                }
+                .build()
+            })?
         }
 
         Ok(TreeState { state })
@@ -126,28 +112,14 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
-        let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
-            .into_iter()
-            .map(|x| {
-                let parent = if (x.0 == 0 && x.1 == 0) {
-                    None
-                } else {
-                    Some(x.1)
-                };
-                (
-                    x.0,
-                    Vertex {
-                        parent,
-                        depth: x.2,
-                        data: x.3,
-                    },
-                )
-            })
-            .collect();
-
-        for vertex in vertices {
+        for event in inserted_events {
             // Add new vertex to the state
-            new_state = new_state.add_vertex(vertex)?
+            new_state = new_state.add_vertex(event).map_err(|e| {
+                BlockchainInconsistent {
+                    err: format!("Cannot add vertex to tree state {}", e),
+                }
+                .build()
+            })?
         }
 
         Ok(TreeState { state: new_state })
@@ -216,12 +188,15 @@ async fn tree_state_test() {
 
     let v7 = state.state.get_vertex(7);
     let v8 = state.state.get_vertex(8);
+    let v0 = state.state.get_vertex_rc(0);
+    let v2 = state.state.get_vertex_rc(2);
+    let v6 = state.state.get_vertex_rc(6);
 
     assert!(v7.is_some(), "Vertex7 should exist");
     assert!(v8.is_some(), "Vertex8 should exist");
     assert_eq!(
-        v8.and_then(|v| v.parent),
-        Some(6),
+        v8.and_then(|v| v.parent.clone()),
+        v6,
         "Parent of Vertex8 should be 6"
     );
     assert_eq!(
@@ -240,29 +215,28 @@ async fn tree_state_test() {
 
     // Should return ancestors successfully
     assert_eq!(
-        state.state.get_ancestor_at(7, 0).ok(),
-        Some(0),
+        state.state.get_ancestor_rc_at(7, 0).ok(),
+        v0,
         "Ancestor at depth 0 should exist"
     );
     assert_eq!(
-        state.state.get_ancestor_at(7, 6).ok(),
-        Some(6),
+        state.state.get_ancestor_rc_at(7, 6).ok(),
+        v6,
         "Ancestor at depth 6 should exist"
     );
     assert_eq!(
-        state.state.get_ancestor_at(8, 6).ok(),
-        Some(6),
+        state.state.get_ancestor_rc_at(8, 6).ok(),
+        v6,
         "Ancestor at depth 6 should exist"
     );
     assert_eq!(
-        state.state.get_ancestor_at(8, 2).ok(),
-        Some(2),
+        state.state.get_ancestor_rc_at(8, 2).ok(),
+        v2,
         "Ancestor at depth 2 should exist"
     );
     // Should fail to get ancestor
-    assert_eq!(
-        state.state.get_ancestor_at(8, 20).ok(),
-        None,
+    assert!(
+        state.state.get_ancestor_rc_at(8, 20).is_err(),
         "Ancestor at depth 20 shouldn't exist"
     );
 
