@@ -70,10 +70,15 @@ impl StateActorDelegate for TreeStateActorDelegate {
         let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
             .into_iter()
             .map(|x| {
+                let parent = if (x.0 == 0 && x.1 == 0) {
+                    None
+                } else {
+                    Some(x.1)
+                };
                 (
                     x.0,
                     Vertex {
-                        parent: Some(x.1),
+                        parent,
                         depth: x.2,
                         data: x.3,
                     },
@@ -124,10 +129,15 @@ impl StateActorDelegate for TreeStateActorDelegate {
         let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
             .into_iter()
             .map(|x| {
+                let parent = if (x.0 == 0 && x.1 == 0) {
+                    None
+                } else {
+                    Some(x.1)
+                };
                 (
                     x.0,
                     Vertex {
-                        parent: Some(x.1),
+                        parent,
                         depth: x.2,
                         data: x.3,
                     },
