@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use dispatcher::Actor;
 use state_actor::error::*;
 use state_actor::types::*;
+use state_actor::util::sort_events;
 use tree::tree_lib::Tree;
 
 use ethabi::Token;
@@ -42,17 +43,19 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
     async fn sync<T: SyncProvider>(&self, block_number: U64, provider: &T) -> Result<Self::State> {
         // let block_hash = provider.get_block_hash(block_number).await?;
-        let mut state = Tree::new();
 
         // Get all inserted events.
         // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let inserted_events: Vec<(u32, u32, u32, Vec<u8>)> = {
+        let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = {
             let inserted_events_fut =
                 provider.get_events_until("Tree", "VertexInserted", (), (), (), block_number);
 
-            let inserted_events_res = inserted_events_fut.await;
+            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
+                sort_events(&mut events);
+                Ok(events)
+            })?;
 
-            let inserted_events: Vec<(u32, u32, u32, Vec<u8>)> = inserted_events_res?
+            let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = sorted_events
                 .into_iter()
                 .map(|x: Event<(U256, U256, U256, Bytes)>| {
                     (
@@ -64,19 +67,19 @@ impl StateActorDelegate for TreeStateActorDelegate {
                 })
                 .collect();
 
-            inserted_events
+            parsed_events
         };
 
         // Add all previous vertices to the state
-        for event in inserted_events {
-            // Add new vertex to the state
-            state = state.add_vertex(event).map_err(|e| {
+        let state = parsed_events
+            .into_iter()
+            .try_fold(Tree::new(), |state, event| state.add_vertex(event))
+            .map_err(|e| {
                 BlockchainInconsistent {
                     err: format!("Cannot add vertex to tree state {}", e),
                 }
                 .build()
-            })?
-        }
+            })?;
 
         Ok(TreeState { state })
     }
@@ -87,17 +90,20 @@ impl StateActorDelegate for TreeStateActorDelegate {
         block_hash: H256,
         provider: &T,
     ) -> Result<Self::State> {
-        let mut new_state = previous_state.state.clone();
+        let new_state = previous_state.state.clone();
 
         // Get all inserted events.
         // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let inserted_events: Vec<(u32, u32, u32, Vec<u8>)> = {
+        let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = {
             let inserted_events_fut =
                 provider.get_events_at_block("Tree", "VertexInserted", (), (), (), block_hash);
 
-            let inserted_events_res = inserted_events_fut.await;
+            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
+                sort_events(&mut events);
+                Ok(events)
+            })?;
 
-            let inserted_events: Vec<(u32, u32, u32, Vec<u8>)> = inserted_events_res?
+            let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = sorted_events
                 .into_iter()
                 .map(|x: Event<(U256, U256, U256, Bytes)>| {
                     (
@@ -109,20 +115,20 @@ impl StateActorDelegate for TreeStateActorDelegate {
                 })
                 .collect();
 
-            inserted_events
+            parsed_events
         };
 
-        for event in inserted_events {
-            // Add new vertex to the state
-            new_state = new_state.add_vertex(event).map_err(|e| {
+        let state = parsed_events
+            .into_iter()
+            .try_fold(new_state, |state, event| state.add_vertex(event))
+            .map_err(|e| {
                 BlockchainInconsistent {
                     err: format!("Cannot add vertex to tree state {}", e),
                 }
                 .build()
-            })?
-        }
+            })?;
 
-        Ok(TreeState { state: new_state })
+        Ok(TreeState { state })
     }
 }
 
