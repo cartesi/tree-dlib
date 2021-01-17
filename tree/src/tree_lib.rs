@@ -31,6 +31,7 @@ where
 {
     pub data: T,
     pub depth: u32,
+    pub index: u32,
     pub parent: Option<Arc<Vertex<T>>>,
 }
 
@@ -80,6 +81,7 @@ where
         let new_deepest = self.deepest.update(VertexKey { depth, index });
 
         let vertex: Vertex<T> = Vertex {
+            index,
             depth,
             data,
             parent,
