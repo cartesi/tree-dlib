@@ -7,7 +7,6 @@ use tree::tree_lib::{Tree, Vertex};
 use ethabi::Token;
 use web3::types::{Bytes, TransactionRequest, H256, U256, U64};
 
-use futures::future::join_all;
 use tokio::sync::{mpsc, watch};
 
 // $ geth --dev --http --http.api eth,net,web3
@@ -68,28 +67,19 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
-        let mut futures = vec![];
-
-        for index in inserted_events {
-            let future = {
-                let idx = index.0.clone();
-                let parent = Some(index.1.clone());
-                let depth = index.2.clone();
-                let data = index.3.clone();
-                async move {
-                    (
-                        idx,
-                        Vertex {
-                            parent,
-                            depth,
-                            data,
-                        },
-                    )
-                }
-            };
-            futures.push(future);
-        }
-        let vertices = join_all(futures).await;
+        let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
+            .into_iter()
+            .map(|x| {
+                (
+                    x.0,
+                    Vertex {
+                        parent: Some(x.1),
+                        depth: x.2,
+                        data: x.3,
+                    },
+                )
+            })
+            .collect();
 
         // Add all previous vertices to the state
         for vertex in vertices {
@@ -131,28 +121,19 @@ impl StateActorDelegate for TreeStateActorDelegate {
             inserted_events
         };
 
-        let mut futures = vec![];
-
-        for index in inserted_events {
-            let future = {
-                let idx = index.0.clone();
-                let parent = Some(index.1.clone());
-                let depth = index.2.clone();
-                let data = index.3.clone();
-                async move {
-                    (
-                        idx,
-                        Vertex {
-                            parent,
-                            depth,
-                            data,
-                        },
-                    )
-                }
-            };
-            futures.push(future);
-        }
-        let vertices = join_all(futures).await;
+        let vertices: Vec<(u32, Vertex<Vec<u8>>)> = inserted_events
+            .into_iter()
+            .map(|x| {
+                (
+                    x.0,
+                    Vertex {
+                        parent: Some(x.1),
+                        depth: x.2,
+                        data: x.3,
+                    },
+                )
+            })
+            .collect();
 
         for vertex in vertices {
             // Add new vertex to the state
