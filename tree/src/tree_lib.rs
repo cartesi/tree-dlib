@@ -55,9 +55,9 @@ where
         }
     }
 
-    /// Adds vertex with `event` to the tree
+    /// Insert vertex with `event` to the tree
     /// event (uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-    pub fn add_vertex(&self, event: (u32, u32, u32, T)) -> Result<Self> {
+    pub fn insert_vertex(&self, event: (u32, u32, u32, T)) -> Result<Self> {
         let (index, parent_index, depth, data) = (event.0, event.1, event.2, event.3);
 
         if index as usize != self.vertices.len() {

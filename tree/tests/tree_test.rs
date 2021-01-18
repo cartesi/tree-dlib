@@ -73,10 +73,10 @@ impl StateActorDelegate for TreeStateActorDelegate {
         // Add all previous vertices to the state
         let state = parsed_events
             .into_iter()
-            .try_fold(Tree::new(), |state, event| state.add_vertex(event))
+            .try_fold(Tree::new(), |state, event| state.insert_vertex(event))
             .map_err(|e| {
                 BlockchainInconsistent {
-                    err: format!("Cannot add vertex to tree state {}", e),
+                    err: format!("Cannot insert vertex to tree state {}", e),
                 }
                 .build()
             })?;
@@ -120,10 +120,10 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
         let state = parsed_events
             .into_iter()
-            .try_fold(new_state, |state, event| state.add_vertex(event))
+            .try_fold(new_state, |state, event| state.insert_vertex(event))
             .map_err(|e| {
                 BlockchainInconsistent {
-                    err: format!("Cannot add vertex to tree state {}", e),
+                    err: format!("Cannot insert vertex to tree state {}", e),
                 }
                 .build()
             })?;
