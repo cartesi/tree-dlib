@@ -1,10 +1,9 @@
-import { describe } from "mocha";
 import { expect, use } from "chai";
-import { deployments, ethers, getNamedAccounts } from "@nomiclabs/buidler";
+import { deployments, ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 
 import { TestTree } from "../src/types/TestTree";
-import { TestTreeFactory } from "../src/types/TestTreeFactory";
+import { TestTree__factory } from "../src/types/factories/TestTree__factory";
 
 use(solidity);
 
@@ -17,7 +16,7 @@ describe("TestTree", async () => {
         const [user] = await ethers.getSigners();
 
         const address = (await deployments.get("TestTree")).address;
-        testTree = TestTreeFactory.connect(address, user);
+        testTree = TestTree__factory.connect(address, user);
     });
 
     it("initial tree", async () => {
