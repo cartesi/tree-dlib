@@ -45,16 +45,11 @@ contract TestTree {
         view
         returns (TreeLibrary.Vertex memory)
     {
-        require(
-            _vertex < t.vertices.length,
-            "vertex index exceeds current tree size"
-        );
-
-        return t.vertices[_vertex];
+        return t.getVertex(_vertex);
     }
 
     function getTreeSize() public view returns (uint32) {
-        return uint32(t.vertices.length);
+        return t.getTreeSize();
     }
 
     function getAncestorAtDepth(uint32 _vertex, uint32 _depth) public view returns (uint32) {

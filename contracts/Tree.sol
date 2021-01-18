@@ -33,8 +33,9 @@ library TreeLibrary {
     /// @param _tree pointer to the tree storage
     /// @param _parent the index of parent vertex in the vertices array (tree)
     /// @param _data data of the new vertex going to hold
+    /// @return index of the inserted vertex
     function insertVertex(Tree storage _tree, uint32 _parent, bytes memory _data)
-        public
+        public returns (uint32)
     {
         Vertex memory v;
         if (_tree.vertices.length == 0) {
@@ -64,19 +65,23 @@ library TreeLibrary {
             v = Vertex(ancestors, parentDepth + 1, _data);
         }
 
+        uint32 index = getTreeSize(_tree);
         _tree.vertices.push(v);
         emit VertexInserted(
-            uint32(_tree.vertices.length - 1),
+            index,
             _parent,
             v.depth,
             _data
         );
+
+        return index;
     }
 
     /// @notice Search an ancestor of a vertex in the tree at a certain depth
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices array (tree)
     /// @param _depth the depth of the ancestor
+    /// @return index of ancestor at depth of _vertex
     function getAncestorAtDepth(Tree storage _tree, uint32 _vertex, uint32 _depth)
         public view returns (uint32)
     {
@@ -109,6 +114,26 @@ library TreeLibrary {
         }
 
         return vertex;
+    }
+
+    /// @notice Get vertex from the tree
+    /// @param _tree pointer to the tree storage
+    /// @param _vertex the index of the vertex in the vertices array (tree)
+    function getVertex(Tree storage _tree, uint32 _vertex) public view
+        returns (TreeLibrary.Vertex memory)
+    {
+        require(
+            _vertex < _tree.vertices.length,
+            "vertex index exceeds current tree size"
+        );
+
+        return _tree.vertices[_vertex];
+    }
+
+    /// @notice Get current tree size
+    /// @param _tree pointer to the tree storage
+    function getTreeSize(Tree storage _tree) public view returns (uint32) {
+        return uint32(_tree.vertices.length);
     }
 
     function getRequiredDepths(uint32 _depth) private pure returns (uint32[] memory) {
