@@ -14,10 +14,11 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-
 library TreeLibrary {
     struct Tree {
         Vertex[] vertices;
+        uint32 deepestVertex;
+        uint32 deepestDepth;
     }
 
     struct Vertex {
@@ -26,7 +27,13 @@ library TreeLibrary {
         bytes data; // data holding in the vertex
     }
 
-    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
+    event VertexInserted(
+        uint32 _index,
+        uint32 _parent,
+        uint32 _depth,
+        bytes _data
+    );
+
     // event VertexInserted(uint32 _index, Vertex _vertex);
 
     /// @notice Insert a vertex to the tree
@@ -34,9 +41,11 @@ library TreeLibrary {
     /// @param _parent the index of parent vertex in the vertices array (tree)
     /// @param _data data of the new vertex going to hold
     /// @return index of the inserted vertex
-    function insertVertex(Tree storage _tree, uint32 _parent, bytes memory _data)
-        public returns (uint32)
-    {
+    function insertVertex(
+        Tree storage _tree,
+        uint32 _parent,
+        bytes memory _data
+    ) public returns (uint32) {
         Vertex memory v;
         if (_tree.vertices.length == 0) {
             // insert the very first vertex into the tree
@@ -67,12 +76,13 @@ library TreeLibrary {
 
         uint32 index = getTreeSize(_tree);
         _tree.vertices.push(v);
-        emit VertexInserted(
-            index,
-            _parent,
-            v.depth,
-            _data
-        );
+
+        if (v.depth > _tree.deepestDepth) {
+            _tree.deepestDepth = v.depth;
+            _tree.deepestVertex = index;
+        }
+
+        emit VertexInserted(index, _parent, v.depth, _data);
 
         return index;
     }
@@ -82,16 +92,25 @@ library TreeLibrary {
     /// @param _vertex the index of the vertex in the vertices array (tree)
     /// @param _depth the depth of the ancestor
     /// @return index of ancestor at depth of _vertex
-    function getAncestorAtDepth(Tree storage _tree, uint32 _vertex, uint32 _depth)
-        public view returns (uint32)
-    {
-        require(_vertex < _tree.vertices.length, "vertex index exceeds current tree size");
-        require(_depth <= _tree.vertices[_vertex].depth, "search depth deeper than vertex depth");
+    function getAncestorAtDepth(
+        Tree storage _tree,
+        uint32 _vertex,
+        uint32 _depth
+    ) public view returns (uint32) {
+        require(
+            _vertex < _tree.vertices.length,
+            "vertex index exceeds current tree size"
+        );
+        require(
+            _depth <= _tree.vertices[_vertex].depth,
+            "search depth deeper than vertex depth"
+        );
 
         uint32 vertex = _vertex;
 
         while (_depth != _tree.vertices[vertex].depth) {
-            uint32[] memory ancestorsOfVertex = _tree.vertices[vertex].ancestors;
+            uint32[] memory ancestorsOfVertex =
+                _tree.vertices[vertex].ancestors;
             uint32 ancestorsLength = uint32(ancestorsOfVertex.length);
             // start searching from the oldest ancestor (smallest depth)
             // example: search ancestor at depth d(20, b'0001 0100) from vertex v at depth (176, b'1011 0000)
@@ -102,7 +121,11 @@ library TreeLibrary {
             // given that ancestorsIndex is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
             // so the continue condition has to be ancestorsIndex < ancestorsLength,
             // can't be ancestorsIndex >= 0
-            for (uint32 ancestorsIndex = ancestorsLength - 1; ancestorsIndex < ancestorsLength; --ancestorsIndex) {
+            for (
+                uint32 ancestorsIndex = ancestorsLength - 1;
+                ancestorsIndex < ancestorsLength;
+                --ancestorsIndex
+            ) {
                 vertex = ancestorsOfVertex[ancestorsIndex];
                 Vertex storage ancestor = _tree.vertices[vertex];
 
@@ -119,7 +142,9 @@ library TreeLibrary {
     /// @notice Get vertex from the tree
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices array (tree)
-    function getVertex(Tree storage _tree, uint32 _vertex) public view
+    function getVertex(Tree storage _tree, uint32 _vertex)
+        public
+        view
         returns (TreeLibrary.Vertex memory)
     {
         require(
@@ -136,7 +161,22 @@ library TreeLibrary {
         return uint32(_tree.vertices.length);
     }
 
-    function getRequiredDepths(uint32 _depth) private pure returns (uint32[] memory) {
+    /// @notice Get current tree size
+    /// @param _tree pointer to the tree storage
+    /// @return index number and depth of the deepest vertex
+    function getDeepest(Tree storage _tree)
+        public
+        view
+        returns (uint32, uint32)
+    {
+        return (_tree.deepestVertex, _tree.deepestDepth);
+    }
+
+    function getRequiredDepths(uint32 _depth)
+        private
+        pure
+        returns (uint32[] memory)
+    {
         // parent is always included in the ancestors
         uint32 depth = _depth - 1;
         uint32 count = 1;
