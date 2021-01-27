@@ -24,32 +24,24 @@ library TreeLibrary {
     struct Vertex {
         uint32[] ancestors; // pointers to ancestors' indices in the vertices array (tree)
         uint32 depth; // depth of the vertex in the tree
-        bytes data; // data holding in the vertex
     }
 
-    event VertexInserted(
-        uint32 _index,
-        uint32 _parent,
-        uint32 _depth,
-        bytes _data
-    );
+    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth);
 
     // event VertexInserted(uint32 _index, Vertex _vertex);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
     /// @param _parent the index of parent vertex in the vertices array (tree)
-    /// @param _data data of the new vertex going to hold
     /// @return index of the inserted vertex
-    function insertVertex(
-        Tree storage _tree,
-        uint32 _parent,
-        bytes memory _data
-    ) public returns (uint32) {
+    function insertVertex(Tree storage _tree, uint32 _parent)
+        public
+        returns (uint32)
+    {
         Vertex memory v;
         if (_tree.vertices.length == 0) {
             // insert the very first vertex into the tree
-            v = Vertex(new uint32[](0), 0, _data);
+            v = Vertex(new uint32[](0), 0);
         } else {
             // insert vertex to the tree attaching to another vertex
             require(
@@ -71,7 +63,7 @@ library TreeLibrary {
                 );
             }
 
-            v = Vertex(ancestors, parentDepth + 1, _data);
+            v = Vertex(ancestors, parentDepth + 1);
         }
 
         uint32 index = getTreeSize(_tree);
@@ -82,7 +74,7 @@ library TreeLibrary {
             _tree.deepestVertex = index;
         }
 
-        emit VertexInserted(index, _parent, v.depth, _data);
+        emit VertexInserted(index, _parent, v.depth);
 
         return index;
     }

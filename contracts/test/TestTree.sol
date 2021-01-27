@@ -16,28 +16,28 @@ pragma experimental ABIEncoderV2;
 
 import "../Tree.sol";
 
-
 contract TestTree {
     using TreeLibrary for TreeLibrary.Tree;
     TreeLibrary.Tree t;
 
-    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
+    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth);
+
     // event VertexInserted(uint32 _index, TreeLibrary.Vertex _vertex);
 
     constructor() {
-        t.insertVertex(0, "Vertex 0"); // first vertex, the parent index is ignored
+        t.insertVertex(0); // first vertex, the parent index is ignored
 
-        t.insertVertex(0, "Vertex 1");
-        t.insertVertex(1, "Vertex 2");
-        t.insertVertex(2, "Vertex 3");
-        t.insertVertex(3, "Vertex 4");
-        t.insertVertex(4, "Vertex 5");
-        t.insertVertex(5, "Vertex 6");
-        t.insertVertex(6, "Vertex 7");
+        t.insertVertex(0);
+        t.insertVertex(1);
+        t.insertVertex(2);
+        t.insertVertex(3);
+        t.insertVertex(4);
+        t.insertVertex(5);
+        t.insertVertex(6);
     }
 
-    function insertVertex(uint32 _parent, bytes memory _data) public {
-        t.insertVertex(_parent, _data);
+    function insertVertex(uint32 _parent) public {
+        t.insertVertex(_parent);
     }
 
     function getVertex(uint32 _vertex)
@@ -52,7 +52,11 @@ contract TestTree {
         return t.getTreeSize();
     }
 
-    function getAncestorAtDepth(uint32 _vertex, uint32 _depth) public view returns (uint32) {
+    function getAncestorAtDepth(uint32 _vertex, uint32 _depth)
+        public
+        view
+        returns (uint32)
+    {
         return t.getAncestorAtDepth(_vertex, _depth);
     }
 }
