@@ -31,7 +31,7 @@ fn unwrap_state(message: Message) -> TreeState {
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
 pub struct TreeState {
-    pub state: Tree<Vec<u8>>,
+    pub state: Tree,
 }
 
 /// Tree StateActor Delegate, which implements `sync` and `fold`.
@@ -46,7 +46,7 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
         // Get all inserted events.
         // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = {
+        let parsed_events: Vec<(u32, u32, u32)> = {
             let inserted_events_fut =
                 provider.get_events_until("Tree", "VertexInserted", (), (), (), block_number);
 
@@ -55,15 +55,10 @@ impl StateActorDelegate for TreeStateActorDelegate {
                 Ok(events)
             })?;
 
-            let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = sorted_events
+            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
                 .into_iter()
-                .map(|x: Event<(U256, U256, U256, Bytes)>| {
-                    (
-                        x.ret.0.as_u32(),
-                        x.ret.1.as_u32(),
-                        x.ret.2.as_u32(),
-                        x.ret.3 .0.to_vec(),
-                    )
+                .map(|x: Event<(U256, U256, U256)>| {
+                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
                 })
                 .collect();
 
@@ -94,7 +89,7 @@ impl StateActorDelegate for TreeStateActorDelegate {
 
         // Get all inserted events.
         // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = {
+        let parsed_events: Vec<(u32, u32, u32)> = {
             let inserted_events_fut =
                 provider.get_events_at_block("Tree", "VertexInserted", (), (), (), block_hash);
 
@@ -103,15 +98,10 @@ impl StateActorDelegate for TreeStateActorDelegate {
                 Ok(events)
             })?;
 
-            let parsed_events: Vec<(u32, u32, u32, Vec<u8>)> = sorted_events
+            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
                 .into_iter()
-                .map(|x: Event<(U256, U256, U256, Bytes)>| {
-                    (
-                        x.ret.0.as_u32(),
-                        x.ret.1.as_u32(),
-                        x.ret.2.as_u32(),
-                        x.ret.3 .0.to_vec(),
-                    )
+                .map(|x: Event<(U256, U256, U256)>| {
+                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
                 })
                 .collect();
 
@@ -155,9 +145,8 @@ async fn tree_state_test() {
     let (kill_switch, kill_rx) = watch::channel(dispatcher::KillSwitchStatus::Normal);
 
     let handle = tree_actor.start(msg_tx, kill_rx).await.unwrap();
-    let test_data = "test vertex from rust".as_bytes().to_vec();
 
-    let input_tokens = vec![Token::Uint(U256::from(6)), Token::Bytes(test_data.clone())];
+    let input_tokens = vec![Token::Uint(U256::from(6))];
 
     let data = contract_data[0]
         .abi
@@ -204,11 +193,6 @@ async fn tree_state_test() {
         v8.and_then(|v| v.parent.clone()),
         v6,
         "Parent of Vertex8 should be 6"
-    );
-    assert_eq!(
-        v8.and_then(|v| Some(v.data.clone())),
-        Some(test_data),
-        "Data of Vertex8 should match"
     );
 
     let deepest = state

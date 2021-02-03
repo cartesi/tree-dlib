@@ -25,29 +25,19 @@ impl Ord for VertexKey {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Vertex<T>
-where
-    T: Clone,
-{
-    pub data: T,
+pub struct Vertex {
     pub depth: u32,
     pub index: u32,
-    pub parent: Option<Arc<Vertex<T>>>,
+    pub parent: Option<Arc<Vertex>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Tree<T>
-where
-    T: Clone,
-{
-    vertices: HashMap<u32, Arc<Vertex<T>>>,
+pub struct Tree {
+    vertices: HashMap<u32, Arc<Vertex>>,
     deepest: OrdSet<VertexKey>,
 }
 
-impl<T> Tree<T>
-where
-    T: Clone,
-{
+impl Tree {
     pub fn new() -> Self {
         Tree {
             vertices: HashMap::new(),
@@ -57,8 +47,8 @@ where
 
     /// Insert vertex with `event` to the tree
     /// event (uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-    pub fn insert_vertex(&self, event: (u32, u32, u32, T)) -> Result<Self> {
-        let (index, parent_index, depth, data) = (event.0, event.1, event.2, event.3);
+    pub fn insert_vertex(&self, event: (u32, u32, u32)) -> Result<Self> {
+        let (index, parent_index, depth) = (event.0, event.1, event.2);
 
         if index as usize != self.vertices.len() {
             return TreeMalformed {
@@ -80,10 +70,9 @@ where
 
         let new_deepest = self.deepest.update(VertexKey { depth, index });
 
-        let vertex: Vertex<T> = Vertex {
+        let vertex: Vertex = Vertex {
             index,
             depth,
-            data,
             parent,
         };
         let new_vertices = self.vertices.update(index, Arc::new(vertex));
@@ -95,7 +84,7 @@ where
     }
 
     /// get ancestor of vertex at depth
-    pub fn get_ancestor_rc_at(&self, index: u32, depth: u32) -> Result<Arc<Vertex<T>>> {
+    pub fn get_ancestor_rc_at(&self, index: u32, depth: u32) -> Result<Arc<Vertex>> {
         let vertex = self.get_vertex_rc(index);
 
         if vertex.is_none() {
@@ -141,12 +130,12 @@ where
     }
 
     /// get vertex by index
-    pub fn get_vertex(&self, index: u32) -> Option<&Vertex<T>> {
+    pub fn get_vertex(&self, index: u32) -> Option<&Vertex> {
         self.vertices.get(&index).map(|vertex| Arc::as_ref(vertex))
     }
 
     /// get vertex by index with reference counter
-    pub fn get_vertex_rc(&self, index: u32) -> Option<Arc<Vertex<T>>> {
+    pub fn get_vertex_rc(&self, index: u32) -> Option<Arc<Vertex>> {
         self.vertices.get(&index).map(|vertex| Arc::clone(vertex))
     }
 }
