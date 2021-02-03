@@ -87,20 +87,11 @@ const config: HardhatUserConfig = {
     namedAccounts: {
         deployer: {
             default: 0
-        },
-        alice: {
-            default: 0
-        },
-        bob: {
-            default: 1
-        },
-        beneficiary: {
-            default: 1
         }
     },
     tenderly: {
         username: 'cartesi',
-        project: 'pos'
+        project: 'tree'
     }
 };
 
