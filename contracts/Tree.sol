@@ -131,6 +131,17 @@ library TreeLibrary {
         return vertex;
     }
 
+    /// @notice Get depth of vertex
+    /// @param _tree pointer to the tree storage
+    /// @param _vertex the index of the vertex in the vertices array (tree)
+    function getDepth(Tree storage _tree, uint32 _vertex)
+        public
+        view
+        returns (uint32)
+    {
+        return getVertex(_tree, _vertex).depth;
+    }
+
     /// @notice Get vertex from the tree
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices array (tree)
