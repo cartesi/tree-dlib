@@ -1,150 +1,50 @@
-use async_trait::async_trait;
-use dispatcher::Actor;
-use state_actor::error::*;
-use state_actor::types::*;
-use state_actor::util::sort_events;
-use tree::tree_lib::Tree;
+use dispatcher_types::*;
+use tree::tree_fold::TreeStateFoldDelegate;
 
 use ethabi::Token;
-use web3::types::{Bytes, TransactionRequest, H256, U256, U64};
+use web3::types::{BlockId, BlockNumber, Bytes, TransactionRequest, U256};
 
-use tokio::sync::{mpsc, watch};
+use std::sync::Arc;
+
+pub static CONTRACT: &'static str = "TestTree";
 
 // $ geth --dev --http --http.api eth,net,web3
 static HTTP_URL: &'static str = "http://localhost:8545";
-static WS_URL: &'static str = "ws://localhost:8546";
-
-/// Actor message
-enum Message {
-    TreeStateActorMessage(BlockState<TreeState>),
-}
-
-fn wrap_message(state: BlockState<TreeState>) -> Message {
-    Message::TreeStateActorMessage(state)
-}
-
-fn unwrap_state(message: Message) -> TreeState {
-    let Message::TreeStateActorMessage(state) = message;
-    state.state
-}
-
-/// Tree dlib state, to be passed to and returned by fold.
-#[derive(Clone, Debug)]
-pub struct TreeState {
-    pub state: Tree,
-}
-
-/// Tree StateActor Delegate, which implements `sync` and `fold`.
-pub struct TreeStateActorDelegate {}
-
-#[async_trait]
-impl StateActorDelegate for TreeStateActorDelegate {
-    type State = TreeState;
-
-    async fn sync<T: SyncProvider>(&self, block_number: U64, provider: &T) -> Result<Self::State> {
-        // let block_hash = provider.get_block_hash(block_number).await?;
-
-        // Get all inserted events.
-        // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32)> = {
-            let inserted_events_fut =
-                provider.get_events_until("Tree", "VertexInserted", (), (), (), block_number);
-
-            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
-                sort_events(&mut events);
-                Ok(events)
-            })?;
-
-            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
-                .into_iter()
-                .map(|x: Event<(U256, U256, U256)>| {
-                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
-                })
-                .collect();
-
-            parsed_events
-        };
-
-        // Add all previous vertices to the state
-        let state = parsed_events
-            .into_iter()
-            .try_fold(Tree::new(), |state, event| state.insert_vertex(event))
-            .map_err(|e| {
-                BlockchainInconsistent {
-                    err: format!("Cannot insert vertex to tree state {}", e),
-                }
-                .build()
-            })?;
-
-        Ok(TreeState { state })
-    }
-
-    async fn fold<T: FoldProvider>(
-        &self,
-        previous_state: &Self::State,
-        block_hash: H256,
-        provider: &T,
-    ) -> Result<Self::State> {
-        let new_state = previous_state.state.clone();
-
-        // Get all inserted events.
-        // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32)> = {
-            let inserted_events_fut =
-                provider.get_events_at_block("Tree", "VertexInserted", (), (), (), block_hash);
-
-            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
-                sort_events(&mut events);
-                Ok(events)
-            })?;
-
-            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
-                .into_iter()
-                .map(|x: Event<(U256, U256, U256)>| {
-                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
-                })
-                .collect();
-
-            parsed_events
-        };
-
-        let state = parsed_events
-            .into_iter()
-            .try_fold(new_state, |state, event| state.insert_vertex(event))
-            .map_err(|e| {
-                BlockchainInconsistent {
-                    err: format!("Cannot insert vertex to tree state {}", e),
-                }
-                .build()
-            })?;
-
-        Ok(TreeState { state })
-    }
-}
 
 /// Tests
 #[tokio::test]
 #[ignore]
 async fn tree_state_test() {
+    let web3_factory = web3_factory::Web3Factory::new();
     let web3 = utils::new_web3_http(HTTP_URL);
     let accounts = web3.eth().accounts().await.unwrap();
-    let delegate = TreeStateActorDelegate {};
+    let delegate = TreeStateFoldDelegate::new(CONTRACT);
 
-    let (tree_actor, _subscriber_kill_switch, contract_data) =
-        state_actor::helper::create_dapp_state_actor(
-            vec![("../deployments/localhost/TestTree.json".into(), "Tree")],
-            delegate,
+    let contract_data = ContractData::new_from_hardhat_export(
+        &std::path::PathBuf::from("tests/deployment.json"),
+        &vec![CONTRACT],
+    )
+    .unwrap();
+
+    let fold_factory = Arc::new(
+        state_fold::provider::Factory::new(
+            HTTP_URL.to_string(),
+            Arc::clone(&web3_factory),
+            std::time::Duration::from_millis(10),
             1,
-            HTTP_URL,
-            WS_URL,
-            wrap_message,
+            1,
+            contract_data.clone(),
         )
-        .await;
+        .unwrap(),
+    );
 
-    let (msg_tx, mut messages) = mpsc::unbounded_channel();
-    let (kill_switch, kill_rx) = watch::channel(dispatcher::KillSwitchStatus::Normal);
-
-    let handle = tree_actor.start(msg_tx, kill_rx).await.unwrap();
+    let fold = state_fold::StateFold::new(
+        delegate,
+        fold_factory,
+        1,
+        4,
+        std::time::Duration::from_millis(10),
+    );
 
     let input_tokens = vec![Token::Uint(U256::from(6))];
 
@@ -172,14 +72,21 @@ async fn tree_state_test() {
     .await
     .unwrap();
 
-    let state_message = messages.recv().await;
+    let latest_block_hash = web3
+        .eth()
+        .block(BlockId::Number(BlockNumber::Latest))
+        .await
+        .unwrap()
+        .unwrap()
+        .hash
+        .unwrap();
 
-    assert!(
-        state_message.is_some(),
-        "Should received message from state actor"
-    );
+    let state_message = fold
+        .get_state_for_block(&(), latest_block_hash)
+        .await
+        .unwrap();
 
-    let state = unwrap_state(state_message.unwrap());
+    let state = state_message.state;
 
     let v7 = state.state.get_vertex(7);
     let v8 = state.state.get_vertex(8);
@@ -229,12 +136,4 @@ async fn tree_state_test() {
         state.state.get_ancestor_rc_at(8, 20).is_err(),
         "Ancestor at depth 20 shouldn't exist"
     );
-
-    // kill actor
-    kill_switch
-        .broadcast(dispatcher::KillSwitchStatus::Shutdown)
-        .unwrap();
-
-    let ret = handle.await.unwrap();
-    assert_eq!(ret.unwrap(), ());
 }

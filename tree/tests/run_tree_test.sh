@@ -4,7 +4,7 @@ pid=$!
 sleep 3
 
 # Deploy contracts to localhost
-npx hardhat deploy --network localhost
+npx hardhat deploy --export deployment.json --network localhost
 
 # Run tests flagged with ignore
 cargo test -p tree --test tree_test -- --nocapture --ignored

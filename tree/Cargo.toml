@@ -7,8 +7,12 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1"
+block_subscriber = { path = "../dispatcher-v2/block_subscriber"}
 dispatcher = { path = "../dispatcher-v2/dispatcher"}
+dispatcher_types = { path = "../dispatcher-v2/dispatcher_types"}
+web3_factory = { path = "../dispatcher-v2/web3_factory"}
 state_actor = { path = "../dispatcher-v2/state_actor"}
+state_fold = { path = "../dispatcher-v2/state_fold"}
 utils = { path = "../dispatcher-v2/utils"}
 ethabi = "12.0"
 ethereum-types = "0.9"
