@@ -11,6 +11,14 @@ pub struct TreeState {
     pub state: Tree,
 }
 
+pub type TreeStateFold = state_fold::StateFold<
+    (),
+    TreeState,
+    BlockState<TreeState>,
+    TreeStateFoldDelegate,
+    state_fold::provider::Factory,
+>;
+
 /// Tree StateFold Delegate, which implements `sync` and `fold`.
 pub struct TreeStateFoldDelegate {
     contract: String,
