@@ -46,26 +46,25 @@ impl Tree {
     }
 
     /// Insert vertex with `event` to the tree
-    /// event (uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-    pub fn insert_vertex(&self, event: (u32, u32, u32)) -> Result<Self> {
-        let (index, parent_index, depth) = (event.0, event.1, event.2);
-
-        if index as usize != self.vertices.len() {
-            return TreeMalformed {
-                err: "Incoming vertex doesn't match current tree size",
-            }
-            .fail();
-        }
+    /// event (uint32 _parent);
+    pub fn insert_vertex(&self, event: u32) -> Result<Self> {
+        let parent_index = event;
 
         let mut parent = self.get_vertex_rc(parent_index);
+        let index = self.vertices.len() as u32;
+        let depth: u32;
+
         if index == 0 {
             // set parent to none for genesis block
             parent = None;
+            depth = 0;
         } else if parent.is_none() {
             return TreeMalformed {
                 err: "Incoming vertex doesn't have a valid parent",
             }
             .fail();
+        } else {
+            depth = parent.clone().unwrap().depth + 1;
         }
 
         let new_deepest = self.deepest.update(VertexKey { depth, index });

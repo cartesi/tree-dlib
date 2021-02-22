@@ -9,6 +9,12 @@ use(solidity);
 
 describe("TestTree", async () => {
     let testTree: TestTree;
+    const TreeId = 0;
+    // const TestTreeString = ethers.utils.toUtf8Bytes("TestTree");
+    // var TestTreeStringBytes = "0x"
+    // for (var i = 0; i < TestTreeString.length; i++) {
+    //     TestTreeStringBytes += TestTreeString[i].toString(16);
+    // }
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -38,7 +44,7 @@ describe("TestTree", async () => {
             "Insert vertex8 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(vertex8Index, vertex7Index, vertex7Depth + 1);
+            .withArgs(vertex7Index, TreeId);
 
         const vertex8 = await (testTree.getVertex(vertex8Index));
 
@@ -53,7 +59,7 @@ describe("TestTree", async () => {
             "Insert vertex9 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(vertex9Index, vertex7Index, vertex7Depth + 1);
+            .withArgs(vertex7Index, TreeId);
 
         const vertex9 = await (testTree.getVertex(vertex9Index));
 
@@ -77,7 +83,7 @@ describe("TestTree", async () => {
             "Insert vertex8 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(vertex8Index, vertex7Index, vertex7Depth + 1);
+            .withArgs(vertex7Index, TreeId);
 
         expect(
             await testTree.getAncestorAtDepth(vertex8Index, vertex8Depth),
@@ -95,7 +101,7 @@ describe("TestTree", async () => {
             "Insert vertex9 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(vertex9Index, vertex7Index, vertex7Depth + 1);
+            .withArgs(vertex7Index, TreeId);
 
         expect(
             await testTree.getAncestorAtDepth(vertex9Index, vertex9Depth),

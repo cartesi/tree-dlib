@@ -20,24 +20,24 @@ contract TestTree {
     using TreeLibrary for TreeLibrary.Tree;
     TreeLibrary.Tree t;
 
-    event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth);
+    event VertexInserted(uint256 _id, uint32 _parent);
 
     // event VertexInserted(uint32 _index, TreeLibrary.Vertex _vertex);
 
     constructor() {
-        t.insertVertex(0); // first vertex, the parent index is ignored
+        insertVertex(0); // first vertex, the parent index is ignored
 
-        t.insertVertex(0);
-        t.insertVertex(1);
-        t.insertVertex(2);
-        t.insertVertex(3);
-        t.insertVertex(4);
-        t.insertVertex(5);
-        t.insertVertex(6);
+        insertVertex(0);
+        insertVertex(1);
+        insertVertex(2);
+        insertVertex(3);
+        insertVertex(4);
+        insertVertex(5);
+        insertVertex(6);
     }
 
     function insertVertex(uint32 _parent) public {
-        t.insertVertex(_parent);
+        t.insertVertex(0, _parent);
     }
 
     function getVertex(uint32 _vertex)

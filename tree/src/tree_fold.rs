@@ -3,12 +3,13 @@ use async_trait::async_trait;
 use state_fold::error::*;
 use state_fold::types::*;
 
+use im::HashMap;
 use web3::types::{H256, U256, U64};
 
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
 pub struct TreeState {
-    pub state: Tree,
+    pub state: HashMap<U256, Tree>,
 }
 
 pub type TreeStateFold = state_fold::StateFold<
@@ -47,8 +48,8 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         // let block_hash = provider.get_block_hash(block_number).await?;
 
         // Get all inserted events.
-        // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32)> = {
+        // event VertexInserted( uint256 _id, uint32 _parent);
+        let parsed_events: Vec<(U256, u32)> = {
             let inserted_events_fut = provider.get_events_until(
                 &self.contract,
                 "VertexInserted",
@@ -63,11 +64,9 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
                 Ok(events)
             })?;
 
-            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
+            let parsed_events: Vec<(U256, u32)> = sorted_events
                 .into_iter()
-                .map(|x: Event<(U256, U256, U256)>| {
-                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
-                })
+                .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
                 .collect();
 
             parsed_events
@@ -76,7 +75,22 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         // Add all previous vertices to the state
         let state = parsed_events
             .into_iter()
-            .try_fold(Tree::new(), |state, event| state.insert_vertex(event))
+            .try_fold(
+                TreeState {
+                    state: HashMap::new(),
+                },
+                |state, event| {
+                    state
+                        .state
+                        .get(&event.0)
+                        .unwrap_or(&Tree::new())
+                        .clone()
+                        .insert_vertex(event.1)
+                        .map(|tree| TreeState {
+                            state: state.state.update(event.0, tree),
+                        })
+                },
+            )
             .map_err(|e| {
                 BlockchainTemporaryError {
                     err: format!("Cannot insert vertex to tree state {}", e),
@@ -84,7 +98,7 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
                 .build()
             })?;
 
-        Ok(TreeState { state })
+        Ok(state)
     }
 
     async fn fold<T: FoldProvider>(
@@ -93,11 +107,9 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         block_hash: H256,
         provider: &T,
     ) -> Result<Self::Accumulator> {
-        let new_state = previous_state.state.clone();
-
         // Get all inserted events.
-        // event VertexInserted(uint32 _index, uint32 _parent, uint32 _depth, bytes _data);
-        let parsed_events: Vec<(u32, u32, u32)> = {
+        // event VertexInserted(uint256 _id, uint32 _parent);
+        let parsed_events: Vec<(U256, u32)> = {
             let inserted_events_fut = provider.get_events_at_block(
                 &self.contract,
                 "VertexInserted",
@@ -112,11 +124,9 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
                 Ok(events)
             })?;
 
-            let parsed_events: Vec<(u32, u32, u32)> = sorted_events
+            let parsed_events: Vec<(U256, u32)> = sorted_events
                 .into_iter()
-                .map(|x: Event<(U256, U256, U256)>| {
-                    (x.ret.0.as_u32(), x.ret.1.as_u32(), x.ret.2.as_u32())
-                })
+                .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
                 .collect();
 
             parsed_events
@@ -124,7 +134,17 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
 
         let state = parsed_events
             .into_iter()
-            .try_fold(new_state, |state, event| state.insert_vertex(event))
+            .try_fold(previous_state.clone(), |state, event| {
+                state
+                    .state
+                    .get(&event.0)
+                    .unwrap_or(&Tree::new())
+                    .clone()
+                    .insert_vertex(event.1)
+                    .map(|tree| TreeState {
+                        state: state.state.update(event.0, tree),
+                    })
+            })
             .map_err(|e| {
                 BlockchainTemporaryError {
                     err: format!("Cannot insert vertex to tree state {}", e),
@@ -132,7 +152,7 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
                 .build()
             })?;
 
-        Ok(TreeState { state })
+        Ok(state)
     }
 
     fn convert(&self, state: &BlockState<Self::Accumulator>) -> Self::State {
