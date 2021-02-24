@@ -9,6 +9,8 @@ use web3::types::{H256, U256, U64};
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
 pub struct TreeState {
+    // There's an extra `U256` identifier in case there're more than one Tree
+    // in the caller contract. Similar to the instantiator pattern.
     pub state: HashMap<U256, Tree>,
 }
 
@@ -45,10 +47,8 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         block_number: U64,
         provider: &T,
     ) -> Result<Self::Accumulator> {
-        // let block_hash = provider.get_block_hash(block_number).await?;
-
         // Get all inserted events.
-        // event VertexInserted( uint256 _id, uint32 _parent);
+        // event VertexInserted(uint256 _id, uint32 _parent);
         let parsed_events: Vec<(U256, u32)> = {
             let inserted_events_fut = provider.get_events_until(
                 &self.contract,
@@ -80,6 +80,7 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
                     state: HashMap::new(),
                 },
                 |state, event| {
+                    // Update Tree with given U256 identifier
                     state
                         .state
                         .get(&event.0)
@@ -135,6 +136,7 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         let state = parsed_events
             .into_iter()
             .try_fold(previous_state.clone(), |state, event| {
+                // Update Tree with given U256 identifier
                 state
                     .state
                     .get(&event.0)
