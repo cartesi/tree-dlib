@@ -16,16 +16,11 @@ static HTTP_URL: &'static str = "http://localhost:8545";
 #[ignore]
 async fn tree_state_test() {
     let web3_factory = web3_factory::Web3Factory::new();
-    let web3 = utils::new_web3_http(HTTP_URL);
-    let accounts = web3.eth().accounts().await.unwrap();
-    let delegate = TreeStateFoldDelegate::new(CONTRACT);
-
     let contract_data = ContractData::new_from_hardhat_export(
         &std::path::PathBuf::from("tests/deployment.json"),
         &vec![CONTRACT],
     )
     .unwrap();
-
     let fold_factory = Arc::new(
         state_fold::provider::Factory::new(
             HTTP_URL.to_string(),
@@ -38,6 +33,7 @@ async fn tree_state_test() {
         .unwrap(),
     );
 
+    let delegate = TreeStateFoldDelegate::new(CONTRACT);
     let fold = state_fold::StateFold::new(
         delegate,
         fold_factory,
@@ -55,6 +51,8 @@ async fn tree_state_test() {
         .encode_input(&input_tokens)
         .unwrap();
 
+    let web3 = utils::new_web3_http(HTTP_URL);
+    let accounts = web3.eth().accounts().await.unwrap();
     web3.send_transaction_with_confirmation(
         TransactionRequest {
             from: accounts[0],
