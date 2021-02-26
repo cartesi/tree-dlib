@@ -137,4 +137,9 @@ impl Tree {
     pub fn get_vertex_rc(&self, index: u32) -> Option<Arc<Vertex>> {
         self.vertices.get(&index).map(|vertex| Arc::clone(vertex))
     }
+
+    /// get tree size
+    pub fn size(&self) -> usize {
+        self.vertices.len()
+    }
 }
