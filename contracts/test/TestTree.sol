@@ -20,7 +20,7 @@ contract TestTree {
     using TreeLibrary for TreeLibrary.Tree;
     TreeLibrary.Tree t;
 
-    event VertexInserted(uint256 _id, uint32 _parent);
+    event VertexInserted(uint256 indexed _id, uint32 _parent);
 
     // event VertexInserted(uint32 _index, TreeLibrary.Vertex _vertex);
 
