@@ -50,26 +50,16 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         // Get all inserted events.
         // event VertexInserted(uint256 _id, uint32 _parent);
         let parsed_events: Vec<(U256, u32)> = {
-            let inserted_events_fut = provider.get_events_until(
-                &self.contract,
-                "VertexInserted",
-                (),
-                (),
-                (),
-                block_number,
-            );
-
-            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
-                state_fold::util::sort_events(&mut events);
-                Ok(events)
-            })?;
-
-            let parsed_events: Vec<(U256, u32)> = sorted_events
+            provider
+                .get_events_until(&self.contract, "VertexInserted", (), (), (), block_number)
+                .await
+                .and_then(|mut events| {
+                    state_fold::util::sort_events(&mut events);
+                    Ok(events)
+                })?
                 .into_iter()
                 .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
-                .collect();
-
-            parsed_events
+                .collect()
         };
 
         // Add all previous vertices to the state
@@ -111,26 +101,16 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         // Get all inserted events.
         // event VertexInserted(uint256 _id, uint32 _parent);
         let parsed_events: Vec<(U256, u32)> = {
-            let inserted_events_fut = provider.get_events_at_block(
-                &self.contract,
-                "VertexInserted",
-                (),
-                (),
-                (),
-                block_hash,
-            );
-
-            let sorted_events = inserted_events_fut.await.and_then(|mut events| {
-                state_fold::util::sort_events(&mut events);
-                Ok(events)
-            })?;
-
-            let parsed_events: Vec<(U256, u32)> = sorted_events
+            provider
+                .get_events_at_block(&self.contract, "VertexInserted", (), (), (), block_hash)
+                .await
+                .and_then(|mut events| {
+                    state_fold::util::sort_events(&mut events);
+                    Ok(events)
+                })?
                 .into_iter()
                 .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
-                .collect();
-
-            parsed_events
+                .collect()
         };
 
         let state = parsed_events
