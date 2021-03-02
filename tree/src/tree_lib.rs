@@ -26,9 +26,15 @@ impl Ord for VertexKey {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Vertex {
-    pub depth: u32,
-    pub index: u32,
-    pub parent: Option<Arc<Vertex>>,
+    depth: u32,
+    index: u32,
+    parent: Option<Arc<Vertex>>,
+}
+
+impl Vertex {
+    pub fn get_parent(&self) -> Option<Arc<Vertex>> {
+        self.parent.clone()
+    }
 }
 
 #[derive(Clone, Debug)]

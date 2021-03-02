@@ -100,7 +100,7 @@ async fn tree_state_test() {
     assert!(v7.is_some(), "Vertex7 should exist");
     assert!(v8.is_some(), "Vertex8 should exist");
     assert_eq!(
-        v8.and_then(|v| v.parent.clone()),
+        v8.and_then(|v| v.get_parent()),
         v6,
         "Parent of Vertex8 should be 6"
     );
