@@ -10,20 +10,20 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-/// @title Test TreeLibrary
+/// @title Test Tree
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "../Tree.sol";
 
 contract TestTree {
-    using TreeLibrary for TreeLibrary.Tree;
-    TreeLibrary.Tree t;
+    using Tree for Tree.TreeCtx;
+    Tree.TreeCtx t;
 
-    // Duplicate event from TreeLibrary
+    // Duplicate event from Tree
     event VertexInserted(uint256 indexed _id, uint32 _parent);
 
-    // event VertexInserted(uint32 _index, TreeLibrary.Vertex _vertex);
+    // event VertexInserted(uint32 _index, Tree.Vertex _vertex);
 
     constructor() {
         insertVertex(0); // first vertex, the parent index is ignored
@@ -44,7 +44,7 @@ contract TestTree {
     function getVertex(uint32 _vertex)
         public
         view
-        returns (TreeLibrary.Vertex memory)
+        returns (Tree.Vertex memory)
     {
         return t.getVertex(_vertex);
     }

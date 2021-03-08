@@ -5,13 +5,13 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deployments, getNamedAccounts } = hre;
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
-    const { TreeLibrary } = await deployments.all();
+    const { Tree } = await deployments.all();
 
     await deploy("TestTree", {
         from: deployer,
         log: true,
         libraries: {
-            ["TreeLibrary"]: TreeLibrary.address
+            ["Tree"]: Tree.address
         },
     });
 };

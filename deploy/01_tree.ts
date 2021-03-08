@@ -6,8 +6,8 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    await deploy("TreeLibrary", { from: deployer, log: true });
+    await deploy("Tree", { from: deployer, log: true });
 };
 
 export default func;
-export const tags = ['TreeLibrary'];
+export const tags = ['Tree'];

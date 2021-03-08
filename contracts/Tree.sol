@@ -14,8 +14,8 @@
 pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
-library TreeLibrary {
-    struct Tree {
+library Tree {
+    struct TreeCtx {
         Vertex[] vertices;
         uint32 deepestVertex;
         uint32 deepestDepth;
@@ -39,7 +39,7 @@ library TreeLibrary {
     /// @param _parent the index of parent vertex in the vertices array (tree)
     /// @return index of the inserted vertex
     function insertVertex(
-        Tree storage _tree,
+        TreeCtx storage _tree,
         uint256 _id,
         uint32 _parent
     ) public returns (uint32) {
@@ -90,7 +90,7 @@ library TreeLibrary {
     /// @param _depth the depth of the ancestor
     /// @return index of ancestor at depth of _vertex
     function getAncestorAtDepth(
-        Tree storage _tree,
+        TreeCtx storage _tree,
         uint32 _vertex,
         uint32 _depth
     ) public view returns (uint32) {
@@ -139,7 +139,7 @@ library TreeLibrary {
     /// @notice Get depth of vertex
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices array (tree)
-    function getDepth(Tree storage _tree, uint32 _vertex)
+    function getDepth(TreeCtx storage _tree, uint32 _vertex)
         public
         view
         returns (uint32)
@@ -150,10 +150,10 @@ library TreeLibrary {
     /// @notice Get vertex from the tree
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices array (tree)
-    function getVertex(Tree storage _tree, uint32 _vertex)
+    function getVertex(TreeCtx storage _tree, uint32 _vertex)
         public
         view
-        returns (TreeLibrary.Vertex memory)
+        returns (Tree.Vertex memory)
     {
         require(
             _vertex < _tree.vertices.length,
@@ -165,14 +165,14 @@ library TreeLibrary {
 
     /// @notice Get current tree size
     /// @param _tree pointer to the tree storage
-    function getTreeSize(Tree storage _tree) public view returns (uint32) {
+    function getTreeSize(TreeCtx storage _tree) public view returns (uint32) {
         return uint32(_tree.vertices.length);
     }
 
     /// @notice Get current tree size
     /// @param _tree pointer to the tree storage
     /// @return index number and depth of the deepest vertex
-    function getDeepest(Tree storage _tree)
+    function getDeepest(TreeCtx storage _tree)
         public
         view
         returns (uint32, uint32)
