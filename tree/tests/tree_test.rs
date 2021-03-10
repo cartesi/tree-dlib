@@ -1,10 +1,8 @@
 use dispatcher_types::*;
-use tree::tree_fold::TreeStateFoldDelegate;
+use tree::tree_fold::create_tree_fold;
 
 use ethabi::Token;
 use web3::types::{BlockId, BlockNumber, Bytes, TransactionRequest, U256};
-
-use std::sync::Arc;
 
 pub static CONTRACT: &'static str = "TestTree";
 
@@ -21,25 +19,17 @@ async fn tree_state_test() {
         &vec![CONTRACT],
     )
     .unwrap();
-    let fold_factory = Arc::new(
-        state_fold::provider::Factory::new(
-            HTTP_URL.to_string(),
-            Arc::clone(&web3_factory),
-            std::time::Duration::from_millis(10),
-            1,
-            1,
-            contract_data.clone(),
-        )
-        .unwrap(),
-    );
 
-    let delegate = TreeStateFoldDelegate::new(CONTRACT);
-    let fold = state_fold::StateFold::new(
-        delegate,
-        fold_factory,
-        1,
+    let fold = create_tree_fold(
+        contract_data.clone(),
+        CONTRACT,
+        HTTP_URL,
+        web3_factory,
         4,
         std::time::Duration::from_millis(10),
+        std::time::Duration::from_millis(10),
+        4,
+        1,
     );
 
     let input_tokens = vec![Token::Uint(U256::from(6))];

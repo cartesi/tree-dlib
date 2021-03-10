@@ -31,7 +31,6 @@ describe("TestTree", async () => {
             "Insertion to invalid parent index"
         ).to.be.revertedWith("parent index exceeds current tree size");
 
-        const vertex7Depth = 7;
         const vertex7Index = 7;
         const vertex8Index = 8;
         const vertex9Index = 9;
@@ -70,7 +69,6 @@ describe("TestTree", async () => {
     });
 
     it("getAncestorAtDepth", async () => {
-        const vertex7Depth = 7;
         const vertex7Index = 7;
         const vertex8Index = 8;
         const vertex9Index = 9;

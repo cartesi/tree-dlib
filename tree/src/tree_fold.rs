@@ -4,6 +4,7 @@ use state_fold::error::*;
 use state_fold::types::*;
 
 use im::HashMap;
+use std::sync::Arc;
 use web3::types::{H256, U256, U64};
 
 /// Tree dlib state, to be passed to and returned by fold.
@@ -14,6 +15,11 @@ pub struct TreeState {
     pub state: HashMap<U256, Tree>,
 }
 
+/// Tree StateFold Delegate, which implements `sync` and `fold`.
+pub struct TreeStateFoldDelegate {
+    contract: String,
+}
+
 pub type TreeStateFold = state_fold::StateFold<
     (),
     TreeState,
@@ -22,17 +28,42 @@ pub type TreeStateFold = state_fold::StateFold<
     state_fold::provider::Factory,
 >;
 
-/// Tree StateFold Delegate, which implements `sync` and `fold`.
-pub struct TreeStateFoldDelegate {
-    contract: String,
-}
-
 impl TreeStateFoldDelegate {
     pub fn new(contract: &str) -> Self {
         TreeStateFoldDelegate {
             contract: contract.to_string(),
         }
     }
+}
+
+pub fn create_tree_fold(
+    contract_data: Vec<dispatcher_types::ContractData>,
+    contract_name: &str,
+    url: &str,
+    web3_factory: Arc<web3_factory::Web3Factory>,
+    concurrent_event_fetch: usize,
+    query_timeout: std::time::Duration,
+    max_delay: std::time::Duration,
+    max_retries: usize,
+    safety_margin: usize,
+) -> TreeStateFold {
+    state_fold::StateFold::new(
+        TreeStateFoldDelegate::new(contract_name),
+        Arc::new(
+            state_fold::provider::Factory::new(
+                url.to_string(),
+                Arc::clone(&web3_factory),
+                query_timeout,
+                1,
+                concurrent_event_fetch,
+                contract_data.clone(),
+            )
+            .unwrap(),
+        ),
+        safety_margin,
+        max_retries,
+        max_delay,
+    )
 }
 
 #[async_trait]
