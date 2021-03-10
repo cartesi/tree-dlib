@@ -78,49 +78,14 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         block_number: U64,
         provider: &T,
     ) -> Result<Self::Accumulator> {
-        // Get all inserted events.
-        // event VertexInserted(uint256 _id, uint32 _parent);
-        let parsed_events: Vec<(U256, u32)> = {
+        compute_state(
             provider
                 .get_events_until(&self.contract, "VertexInserted", (), (), (), block_number)
-                .await
-                .and_then(|mut events| {
-                    state_fold::util::sort_events(&mut events);
-                    Ok(events)
-                })?
-                .into_iter()
-                .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
-                .collect()
-        };
-
-        // Add all previous vertices to the state
-        let state = parsed_events
-            .into_iter()
-            .try_fold(
-                TreeState {
-                    state: HashMap::new(),
-                },
-                |state, event| {
-                    // Update Tree with given U256 identifier
-                    state
-                        .state
-                        .get(&event.0)
-                        .unwrap_or(&Tree::new())
-                        .clone()
-                        .insert_vertex(event.1)
-                        .map(|tree| TreeState {
-                            state: state.state.update(event.0, tree),
-                        })
-                },
-            )
-            .map_err(|e| {
-                BlockchainTemporaryError {
-                    err: format!("Cannot insert vertex to tree state {}", e),
-                }
-                .build()
-            })?;
-
-        Ok(state)
+                .await,
+            TreeState {
+                state: HashMap::new(),
+            },
+        )
     }
 
     async fn fold<T: FoldProvider>(
@@ -129,46 +94,53 @@ impl StateFoldDelegate for TreeStateFoldDelegate {
         block_hash: H256,
         provider: &T,
     ) -> Result<Self::Accumulator> {
-        // Get all inserted events.
-        // event VertexInserted(uint256 _id, uint32 _parent);
-        let parsed_events: Vec<(U256, u32)> = {
+        compute_state(
             provider
                 .get_events_at_block(&self.contract, "VertexInserted", (), (), (), block_hash)
-                .await
-                .and_then(|mut events| {
-                    state_fold::util::sort_events(&mut events);
-                    Ok(events)
-                })?
-                .into_iter()
-                .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
-                .collect()
-        };
-
-        let state = parsed_events
-            .into_iter()
-            .try_fold(previous_state.clone(), |state, event| {
-                // Update Tree with given U256 identifier
-                state
-                    .state
-                    .get(&event.0)
-                    .unwrap_or(&Tree::new())
-                    .clone()
-                    .insert_vertex(event.1)
-                    .map(|tree| TreeState {
-                        state: state.state.update(event.0, tree),
-                    })
-            })
-            .map_err(|e| {
-                BlockchainTemporaryError {
-                    err: format!("Cannot insert vertex to tree state {}", e),
-                }
-                .build()
-            })?;
-
-        Ok(state)
+                .await,
+            previous_state.clone(),
+        )
     }
 
     fn convert(&self, state: &BlockState<Self::Accumulator>) -> Self::State {
         state.clone()
     }
+}
+
+type TreeLogs = Result<Vec<Event<(U256, U256)>>>;
+
+/// Computes the state from all events emission
+fn compute_state(events: TreeLogs, previous_state: TreeState) -> Result<TreeState> {
+    // Get all inserted events.
+    // event VertexInserted(uint256 _id, uint32 _parent);
+    let parsed_events: Vec<(U256, u32)> = events
+        .and_then(|mut events| {
+            state_fold::util::sort_events(&mut events);
+            Ok(events)
+        })?
+        .into_iter()
+        .map(|x: Event<(U256, U256)>| (x.ret.0, x.ret.1.as_u32()))
+        .collect();
+    let state = parsed_events
+        .into_iter()
+        .try_fold(previous_state, |state, event| {
+            // Update Tree with given U256 identifier
+            state
+                .state
+                .get(&event.0)
+                .unwrap_or(&Tree::new())
+                .clone()
+                .insert_vertex(event.1)
+                .map(|tree| TreeState {
+                    state: state.state.update(event.0, tree),
+                })
+        })
+        .map_err(|e| {
+            BlockchainTemporaryError {
+                err: format!("Cannot insert vertex to tree state {}", e),
+            }
+            .build()
+        })?;
+
+    Ok(state)
 }

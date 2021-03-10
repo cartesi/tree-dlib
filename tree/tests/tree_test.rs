@@ -4,7 +4,7 @@ use tree::tree_fold::create_tree_fold;
 use ethabi::Token;
 use web3::types::{BlockId, BlockNumber, Bytes, TransactionRequest, U256};
 
-pub static CONTRACT: &'static str = "TestTree";
+static CONTRACT: &'static str = "TestTree";
 
 // $ geth --dev --http --http.api eth,net,web3
 static HTTP_URL: &'static str = "http://localhost:8545";
