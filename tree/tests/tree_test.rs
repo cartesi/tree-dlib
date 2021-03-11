@@ -1,8 +1,7 @@
 use dispatcher_types::*;
 use tree::tree_fold::create_tree_fold;
 
-use ethabi::Token;
-use web3::types::{BlockId, BlockNumber, Bytes, TransactionRequest, U256};
+use web3::types::{BlockId, BlockNumber, U256};
 
 static CONTRACT: &'static str = "TestTree";
 
@@ -32,33 +31,7 @@ async fn tree_state_test() {
         1,
     );
 
-    let input_tokens = vec![Token::Uint(U256::from(6))];
-
-    let data = contract_data[0]
-        .abi
-        .function("insertVertex")
-        .unwrap()
-        .encode_input(&input_tokens)
-        .unwrap();
-
     let web3 = utils::new_web3_http(HTTP_URL);
-    let accounts = web3.eth().accounts().await.unwrap();
-    web3.send_transaction_with_confirmation(
-        TransactionRequest {
-            from: accounts[0],
-            to: Some(contract_data[0].address.clone()),
-            gas: None,
-            gas_price: None,
-            value: None,
-            nonce: None,
-            data: Some(Bytes(data.clone())),
-            condition: None,
-        },
-        std::time::Duration::from_secs(2),
-        0, // do not wait for confirmation
-    )
-    .await
-    .unwrap();
 
     let latest_block_hash = web3
         .eth()
@@ -82,17 +55,15 @@ async fn tree_state_test() {
         .clone();
 
     let v7 = state.get_vertex(7);
-    let v8 = state.get_vertex(8);
     let v0 = state.get_vertex_rc(0);
     let v2 = state.get_vertex_rc(2);
     let v6 = state.get_vertex_rc(6);
 
     assert!(v7.is_some(), "Vertex7 should exist");
-    assert!(v8.is_some(), "Vertex8 should exist");
     assert_eq!(
-        v8.and_then(|v| v.get_parent()),
+        v7.and_then(|v| v.get_parent()),
         v6,
-        "Parent of Vertex8 should be 6"
+        "Parent of Vertex7 should be 6"
     );
 
     let deepest = state
@@ -114,12 +85,7 @@ async fn tree_state_test() {
         "Ancestor at depth 6 should exist"
     );
     assert_eq!(
-        state.get_ancestor_rc_at(8, 6).ok(),
-        v6,
-        "Ancestor at depth 6 should exist"
-    );
-    assert_eq!(
-        state.get_ancestor_rc_at(8, 2).ok(),
+        state.get_ancestor_rc_at(7, 2).ok(),
         v2,
         "Ancestor at depth 2 should exist"
     );
