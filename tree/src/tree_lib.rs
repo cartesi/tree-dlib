@@ -129,6 +129,16 @@ impl Tree {
         }
     }
 
+    /// get index of last vertex
+    pub fn get_last(&self) -> Option<u32> {
+        let size = self.size();
+        if size == 0 {
+            None
+        } else {
+            Some((size - 1) as u32)
+        }
+    }
+
     /// get index of deepest vertex
     pub fn get_deepest(&self) -> Option<u32> {
         self.deepest.get_max().and_then(|key| Some(key.index))
@@ -147,5 +157,96 @@ impl Tree {
     /// get tree size
     pub fn size(&self) -> usize {
         self.vertices.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tree_lib::Tree;
+
+    #[test]
+    fn test_insert_vertex() {
+        let mut tree = Tree::new().insert_vertex(0);
+        assert!(tree.is_ok(), "Insert Genesis Block should pass");
+
+        tree = tree.unwrap().insert_vertex(5);
+        assert!(tree.is_err(), "Insert invalid parent should fail");
+    }
+
+    #[test]
+    fn test_get_vertex() {
+        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        for i in 0u32..20 {
+            tree = tree.insert_vertex(i).unwrap();
+        }
+
+        for i in 0u32..21 {
+            let vertex = tree.get_vertex_rc(i);
+            assert!(vertex.is_some(), "Vertex should exist");
+            assert!(vertex.unwrap().depth == i, "Vertex depth should match");
+        }
+
+        for _ in 0u32..20 {
+            tree = tree.insert_vertex(20).unwrap();
+        }
+
+        let vertex_20 = tree.get_vertex_rc(20).unwrap();
+
+        for i in 21u32..41 {
+            let vertex = tree.get_vertex_rc(i);
+            assert!(vertex.is_some(), "Vertex should exist");
+            assert!(vertex.unwrap().depth == (vertex_20.depth + 1), "Vertex depth should match");
+        }
+    }
+
+    #[test]
+    fn test_last() {
+        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        for i in 0u32..20 {
+            tree = tree.insert_vertex(i).unwrap();
+        }
+
+        let last = tree.clone().get_last();
+        assert!(last.is_some(), "Last vertex should exist");
+        assert!(last.unwrap() == 20, "Last vertex should match");
+    }
+
+    #[test]
+    fn test_deepest() {
+        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        for i in 0u32..20 {
+            tree = tree.insert_vertex(i).unwrap();
+        }
+        for _ in 0u32..5 {
+            tree = tree.insert_vertex(20).unwrap();
+        }
+
+        let deepest = tree.clone().get_deepest();
+        assert!(deepest.is_some(), "Deepest vertex should exist");
+        assert!(deepest.unwrap() == 21, "Deepest vertex should match");
+    }
+
+    #[test]
+    fn test_ancestor() {
+        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        for i in 0u32..20 {
+            tree = tree.insert_vertex(i).unwrap();
+        }
+
+        let last = tree.clone().get_last().unwrap();
+        let last_vertex = tree.clone().get_vertex_rc(last).unwrap();
+
+        for i in 0u32..last_vertex.depth {
+            let ancestor = tree.clone().get_ancestor_rc_at(last, i);
+            assert!(ancestor.is_ok(), "Get ancestor on path to Genesis should pass")
+        }
+
+        let deepest = tree.clone().get_deepest().unwrap();
+        let deepest_vertex = tree.clone().get_vertex_rc(deepest).unwrap();
+
+        for i in 0u32..deepest_vertex.depth {
+            let ancestor = tree.clone().get_ancestor_rc_at(deepest, i);
+            assert!(ancestor.is_ok(), "Get ancestor on path to Genesis should pass")
+        }
     }
 }
