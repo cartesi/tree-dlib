@@ -49,16 +49,13 @@ pub fn create_tree_fold(
 ) -> TreeStateFold {
     state_fold::StateFold::new(
         TreeStateFoldDelegate::new(contract_name),
-        Arc::new(
-            state_fold::provider::Factory::new(
-                url.to_string(),
-                Arc::clone(&web3_factory),
-                query_timeout,
-                1,
-                concurrent_event_fetch,
-                contract_data.clone(),
-            )
-            .unwrap(),
+        state_fold::provider::Factory::new(
+            url.to_string(),
+            Arc::clone(&web3_factory),
+            query_timeout,
+            1,
+            concurrent_event_fetch,
+            contract_data.clone(),
         ),
         safety_margin,
         max_retries,

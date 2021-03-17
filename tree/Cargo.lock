@@ -99,6 +99,7 @@ dependencies = [
 name = "block_subscriber"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "backoff",
  "dispatcher_types",
  "snafu",
@@ -1830,6 +1831,7 @@ dependencies = [
 name = "web3_factory"
 version = "0.1.0"
 dependencies = [
+ "backoff",
  "tokio 0.2.23",
  "web3",
 ]
