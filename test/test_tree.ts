@@ -21,7 +21,17 @@ describe("TestTree", async () => {
 
         const [user] = await ethers.getSigners();
 
-        const address = (await deployments.get("TestTree")).address;
+        const TreeAddress = (await deployments.get("Tree"))
+            .address;
+        const { deploy } = deployments;
+        const { address } = await deploy("TestTree", {
+            from: await user.getAddress(),
+            log: true,
+            libraries: {
+                ["Tree"]: TreeAddress,
+            },
+        });
+
         testTree = TestTree__factory.connect(address, user);
     });
 
