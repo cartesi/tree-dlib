@@ -195,7 +195,10 @@ mod tests {
         for i in 21u32..41 {
             let vertex = tree.get_vertex_rc(i);
             assert!(vertex.is_some(), "Vertex should exist");
-            assert!(vertex.unwrap().depth == (vertex_20.depth + 1), "Vertex depth should match");
+            assert!(
+                vertex.unwrap().depth == (vertex_20.depth + 1),
+                "Vertex depth should match"
+            );
         }
     }
 
@@ -238,7 +241,10 @@ mod tests {
 
         for i in 0u32..last_vertex.depth {
             let ancestor = tree.clone().get_ancestor_rc_at(last, i);
-            assert!(ancestor.is_ok(), "Get ancestor on path to Genesis should pass")
+            assert!(
+                ancestor.is_ok(),
+                "Get ancestor on path to Genesis should pass"
+            )
         }
 
         let deepest = tree.clone().get_deepest().unwrap();
@@ -246,7 +252,10 @@ mod tests {
 
         for i in 0u32..deepest_vertex.depth {
             let ancestor = tree.clone().get_ancestor_rc_at(deepest, i);
-            assert!(ancestor.is_ok(), "Get ancestor on path to Genesis should pass")
+            assert!(
+                ancestor.is_ok(),
+                "Get ancestor on path to Genesis should pass"
+            )
         }
     }
 }
