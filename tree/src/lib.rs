@@ -21,5 +21,5 @@
 
 #![warn(unused_extern_crates)]
 pub mod error;
-pub mod tree_fold;
+pub mod fold;
 pub mod tree_lib;
