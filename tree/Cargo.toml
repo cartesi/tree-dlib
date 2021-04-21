@@ -6,18 +6,17 @@ homepage = "https://cartesi.io"
 edition = "2018"
 
 [dependencies]
-async-trait = "0.1"
-block_subscriber = { path = "../dispatcher-v2/block_subscriber"}
 dispatcher = { path = "../dispatcher-v2/dispatcher"}
-dispatcher_types = { path = "../dispatcher-v2/dispatcher_types"}
-web3_factory = { path = "../dispatcher-v2/web3_factory"}
-state_actor = { path = "../dispatcher-v2/state_actor"}
-state_fold = { path = "../dispatcher-v2/state_fold"}
-utils = { path = "../dispatcher-v2/utils"}
-ethabi = "12.0"
-ethereum-types = "0.9"
+
+async-trait = "0.1"
+ethers = { git = "https://github.com/gakonst/ethers-rs", rev = "66a503d" }
+ethabi = { version = "14.0.0", default-features = false }
 futures = "0.3"
 im = "15.0"
+serde_json = "1.0"
 snafu = "0.6"
-tokio = { version = "0.2", features = ["full"] }
-web3 = "0.14.0"
+tokio = { version = "^1", features = ["sync"] }
+
+[build-dependencies]
+ethers = { git = "https://github.com/gakonst/ethers-rs", rev = "66a503d" }
+serde_json = "1.0"

@@ -6,6 +6,7 @@ use dispatcher::state_fold::{
     delegate_access::{FoldAccess, SyncAccess},
     error::*,
     types::*,
+    utils as fold_utils,
 };
 use dispatcher::types::Block;
 
@@ -84,6 +85,14 @@ impl StateFoldDelegate for TreeFoldDelegate {
         access: &A,
     ) -> FoldResult<Self::Accumulator, A> {
         let identifier = previous_state.identifier.clone();
+
+        // Check if there was (possibly) some log emited on this block.
+        let bloom = block.logs_bloom;
+        if !(fold_utils::contains_address(&bloom, &self.caller_address)
+            && fold_utils::contains_topic(&bloom, &identifier))
+        {
+            return Ok(previous_state.clone());
+        }
 
         let contract = access
             .build_fold_contract(self.caller_address, block.hash, tree_contract::Tree::new)
