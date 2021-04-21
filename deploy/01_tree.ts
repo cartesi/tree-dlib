@@ -9,5 +9,5 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     await deploy("Tree", { from: deployer, log: true });
 };
 
+func.tags = ['Tree'];
 export default func;
-export const tags = ['Tree'];

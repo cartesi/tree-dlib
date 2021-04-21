@@ -16,5 +16,6 @@ const func: DeployFunction = async (hre: HardhatRuntimeEnvironment) => {
     });
 };
 
+func.tags = ['TestTree'];
+func.dependencies=['Tree'];
 export default func;
-export const tags = ['TestTree'];

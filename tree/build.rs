@@ -19,10 +19,7 @@ fn write_contract(contract_name: &str, source: &str, destination: &str) {
 }
 
 fn main() {
-    let contracts = vec![
-        ("TestTree", "test/TestTree", "test_tree_contract.rs"),
-        ("Tree", "Tree", "tree_contract.rs"),
-    ];
+    let contracts = vec![("Tree", "Tree", "tree_contract.rs")];
 
     for (name, file, rs) in contracts {
         let path = format!("../artifacts/contracts/{}.sol/{}.json", file, name);
