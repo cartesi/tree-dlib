@@ -35,6 +35,14 @@ impl Vertex {
     pub fn get_parent(&self) -> Option<Arc<Vertex>> {
         self.parent.clone()
     }
+
+    pub fn get_depth(&self) -> u32 {
+        self.depth
+    }
+
+    pub fn get_index(&self) -> u32 {
+        self.index
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -154,6 +162,28 @@ impl Tree {
         self.vertices.get(&index).map(|vertex| Arc::clone(vertex))
     }
 
+    /// is the `vertex` on longest valid path with minimal `distance`
+    pub fn is_valid_vertex_with_distance(&self, index: u32, distance: u32) -> bool {
+        if let Some(vertex) = self.get_vertex(index) {
+            if let Some(deepest) = self.get_deepest() {
+                let deepest_vertex = self.get_vertex(deepest).unwrap();
+                let ancestor = self.get_ancestor_rc_at(deepest, vertex.depth);
+
+                if ancestor.is_ok() {
+                    let ancestor = ancestor.unwrap();
+                    let ancestor_depth = ancestor.get_depth();
+                    let ancestor_index = ancestor.get_index();
+                    if (ancestor_index == index)
+                        && (deepest_vertex.get_depth() - ancestor_depth >= distance)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// get tree size
     pub fn size(&self) -> usize {
         self.vertices.len()
@@ -209,7 +239,7 @@ mod tests {
             tree = tree.insert_vertex(i).unwrap();
         }
 
-        let last = tree.clone().get_last();
+        let last = tree.get_last();
         assert!(last.is_some(), "Last vertex should exist");
         assert!(last.unwrap() == 20, "Last vertex should match");
     }
@@ -224,7 +254,7 @@ mod tests {
             tree = tree.insert_vertex(20).unwrap();
         }
 
-        let deepest = tree.clone().get_deepest();
+        let deepest = tree.get_deepest();
         assert!(deepest.is_some(), "Deepest vertex should exist");
         assert!(deepest.unwrap() == 21, "Deepest vertex should match");
     }
@@ -236,22 +266,40 @@ mod tests {
             tree = tree.insert_vertex(i).unwrap();
         }
 
-        let last = tree.clone().get_last().unwrap();
-        let last_vertex = tree.clone().get_vertex_rc(last).unwrap();
+        let last = tree.get_last().unwrap();
+        let last_vertex = tree.get_vertex_rc(last).unwrap();
+
+        assert!(
+            tree.is_valid_vertex_with_distance(0, 20),
+            "Genesis block should be valid and distance 20"
+        );
+        assert!(
+            !tree.is_valid_vertex_with_distance(0, 21),
+            "Genesis block should be valid and distance 20"
+        );
+
+        assert!(
+            tree.is_valid_vertex_with_distance(20, 0),
+            "Last block should be valid and distance 0"
+        );
+        assert!(
+            !tree.is_valid_vertex_with_distance(20, 1),
+            "Last block should be valid and distance 0"
+        );
 
         for i in 0u32..last_vertex.depth {
-            let ancestor = tree.clone().get_ancestor_rc_at(last, i);
+            let ancestor = tree.get_ancestor_rc_at(last, i);
             assert!(
                 ancestor.is_ok(),
                 "Get ancestor on path to Genesis should pass"
             )
         }
 
-        let deepest = tree.clone().get_deepest().unwrap();
-        let deepest_vertex = tree.clone().get_vertex_rc(deepest).unwrap();
+        let deepest = tree.get_deepest().unwrap();
+        let deepest_vertex = tree.get_vertex_rc(deepest).unwrap();
 
         for i in 0u32..deepest_vertex.depth {
-            let ancestor = tree.clone().get_ancestor_rc_at(deepest, i);
+            let ancestor = tree.get_ancestor_rc_at(deepest, i);
             assert!(
                 ancestor.is_ok(),
                 "Get ancestor on path to Genesis should pass"
