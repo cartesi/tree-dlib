@@ -128,15 +128,16 @@ fn compute_state(
     events: Vec<tree_contract::VertexInsertedFilter>,
     previous_state: TreeState,
 ) -> crate::error::Result<TreeState> {
-    events.into_iter().try_fold(previous_state, |state, event| {
-        state
-            .tree
-            .clone()
-            .unwrap_or(Tree::new())
-            .insert_vertex(event.parent)
-            .map(|tree| TreeState {
-                identifier: state.identifier,
-                tree: Some(tree),
-            })
+    let tree = events
+        .into_iter()
+        .try_fold(previous_state.tree, |tree, event| {
+            tree.unwrap_or(Tree::new())
+                .insert_vertex(event.parent)
+                .map(|tree| Some(tree))
+        })?;
+
+    Ok(TreeState {
+        identifier: previous_state.identifier,
+        tree,
     })
 }
