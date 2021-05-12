@@ -51,6 +51,12 @@ pub struct Tree {
     deepest: OrdSet<VertexKey>,
 }
 
+impl Default for Tree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Tree {
     pub fn new() -> Self {
         Tree {
@@ -113,13 +119,13 @@ impl Tree {
 
         if vertex_depth == depth {
             // vertex at index is the ancestor at depth itself
-            return Ok(v);
+            Ok(v)
         } else if vertex_depth < depth {
             // invalid index or depth
-            return VertexNotFound {
+            VertexNotFound {
                 err: "Vertex is not deeper than ancestor",
             }
-            .fail();
+            .fail()
         } else {
             let mut parent = v.parent.clone();
 
@@ -149,7 +155,7 @@ impl Tree {
 
     /// get index of deepest vertex
     pub fn get_deepest(&self) -> Option<u32> {
-        self.deepest.get_max().and_then(|key| Some(key.index))
+        self.deepest.get_max().map(|key| key.index)
     }
 
     /// get vertex by index
@@ -169,8 +175,7 @@ impl Tree {
                 let deepest_vertex = self.get_vertex(deepest).unwrap();
                 let ancestor = self.get_ancestor_rc_at(deepest, vertex.depth);
 
-                if ancestor.is_ok() {
-                    let ancestor = ancestor.unwrap();
+                if let Ok(ancestor) = ancestor {
                     let ancestor_depth = ancestor.get_depth();
                     let ancestor_index = ancestor.get_index();
                     if (ancestor_index == index)
