@@ -45,7 +45,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
         block: &Block,
         access: &A,
     ) -> SyncResult<Self::Accumulator, A> {
-        let identifier = initial_state.clone();
+        let identifier = *initial_state;
 
         let contract = access
             .build_sync_contract(self.caller_address, block.number, tree_contract::Tree::new)
@@ -84,7 +84,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
         block: &Block,
         access: &A,
     ) -> FoldResult<Self::Accumulator, A> {
-        let identifier = previous_state.identifier.clone();
+        let identifier = previous_state.identifier;
 
         // Check if there was (possibly) some log emited on this block.
         let bloom = block.logs_bloom;
@@ -131,7 +131,7 @@ fn compute_state(
     let tree = events
         .into_iter()
         .try_fold(previous_state.tree, |tree, event| {
-            tree.unwrap_or(Tree::new())
+            tree.unwrap_or_default()
                 .insert_vertex(event.parent)
                 .map(|tree| Some(tree))
         })?;
