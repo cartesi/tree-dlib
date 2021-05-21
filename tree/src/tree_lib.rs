@@ -45,26 +45,13 @@ impl Vertex {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Tree {
     vertices: HashMap<u32, Arc<Vertex>>,
     deepest: OrdSet<VertexKey>,
 }
 
-impl Default for Tree {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Tree {
-    pub fn new() -> Self {
-        Tree {
-            vertices: HashMap::new(),
-            deepest: OrdSet::new(),
-        }
-    }
-
     /// Insert vertex with `event` to the tree
     /// event (uint32 _parent);
     pub fn insert_vertex(&self, event: u32) -> Result<Self> {
@@ -201,16 +188,16 @@ mod tests {
 
     #[test]
     fn test_insert_vertex() {
-        let mut tree = Tree::new().insert_vertex(0);
+        let tree = Tree::default().insert_vertex(0);
         assert!(tree.is_ok(), "Insert Genesis Block should pass");
 
-        tree = tree.unwrap().insert_vertex(5);
+        let tree = tree.unwrap().insert_vertex(5);
         assert!(tree.is_err(), "Insert invalid parent should fail");
     }
 
     #[test]
     fn test_get_vertex() {
-        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        let mut tree = Tree::default().insert_vertex(0).unwrap();
         for i in 0u32..20 {
             tree = tree.insert_vertex(i).unwrap();
         }
@@ -239,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_last() {
-        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        let mut tree = Tree::default().insert_vertex(0).unwrap();
         for i in 0u32..20 {
             tree = tree.insert_vertex(i).unwrap();
         }
@@ -251,7 +238,7 @@ mod tests {
 
     #[test]
     fn test_deepest() {
-        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        let mut tree = Tree::default().insert_vertex(0).unwrap();
         for i in 0u32..20 {
             tree = tree.insert_vertex(i).unwrap();
         }
@@ -266,7 +253,7 @@ mod tests {
 
     #[test]
     fn test_ancestor() {
-        let mut tree = Tree::new().insert_vertex(0).unwrap();
+        let mut tree = Tree::default().insert_vertex(0).unwrap();
         for i in 0u32..20 {
             tree = tree.insert_vertex(i).unwrap();
         }
