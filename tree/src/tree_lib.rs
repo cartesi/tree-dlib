@@ -5,9 +5,10 @@ use snafu::ResultExt;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
-/// `index` is the unique identifier to each vertex while `depth` is used for sorting.
-/// The deepest vertex is defined as largest `depth`, and smallest `index` when the `depth`s are equal,
-/// meaning the vertex is oldest in that `depth`
+/// `index` is the unique identifier to each vertex while `depth` is used for
+/// sorting. The deepest vertex is defined as largest `depth`, and smallest
+/// `index` when the `depth`s are equal, meaning the vertex is oldest in that
+/// `depth`
 #[derive(Clone, Debug, Eq, PartialOrd, PartialEq)]
 struct VertexKey {
     depth: u32,
@@ -90,7 +91,11 @@ impl Tree {
     }
 
     /// get ancestor of vertex at depth
-    pub fn get_ancestor_rc_at(&self, index: u32, depth: u32) -> Result<Arc<Vertex>> {
+    pub fn get_ancestor_rc_at(
+        &self,
+        index: u32,
+        depth: u32,
+    ) -> Result<Arc<Vertex>> {
         let vertex = self.get_vertex_rc(index);
 
         if vertex.is_none() {
@@ -156,7 +161,11 @@ impl Tree {
     }
 
     /// is the `vertex` on longest valid path with minimal `distance`
-    pub fn is_valid_vertex_with_distance(&self, index: u32, distance: u32) -> bool {
+    pub fn is_valid_vertex_with_distance(
+        &self,
+        index: u32,
+        distance: u32,
+    ) -> bool {
         if let Some(vertex) = self.get_vertex(index) {
             if let Some(deepest) = self.get_deepest() {
                 let deepest_vertex = self.get_vertex(deepest).unwrap();
@@ -166,7 +175,8 @@ impl Tree {
                     let ancestor_depth = ancestor.get_depth();
                     let ancestor_index = ancestor.get_index();
                     if (ancestor_index == index)
-                        && (deepest_vertex.get_depth() - ancestor_depth >= distance)
+                        && (deepest_vertex.get_depth() - ancestor_depth
+                            >= distance)
                     {
                         return true;
                     }

@@ -48,7 +48,11 @@ impl StateFoldDelegate for TreeFoldDelegate {
         let identifier = *initial_state;
 
         let contract = access
-            .build_sync_contract(self.caller_address, block.number, tree_contract::Tree::new)
+            .build_sync_contract(
+                self.caller_address,
+                block.number,
+                tree_contract::Tree::new,
+            )
             .await;
 
         // Get all inserted events.
@@ -95,7 +99,11 @@ impl StateFoldDelegate for TreeFoldDelegate {
         }
 
         let contract = access
-            .build_fold_contract(self.caller_address, block.hash, tree_contract::Tree::new)
+            .build_fold_contract(
+                self.caller_address,
+                block.hash,
+                tree_contract::Tree::new,
+            )
             .await;
 
         // Get all inserted events.
@@ -108,12 +116,13 @@ impl StateFoldDelegate for TreeFoldDelegate {
                 err: "Error querying for vertex inserted",
             })?;
 
-        let state = compute_state(inserted_events, previous_state.clone()).map_err(|e| {
-            FoldDelegateError {
-                err: format!("Could not update tree state: {}", e),
-            }
-            .build()
-        })?;
+        let state = compute_state(inserted_events, previous_state.clone())
+            .map_err(|e| {
+                FoldDelegateError {
+                    err: format!("Could not update tree state: {}", e),
+                }
+                .build()
+            })?;
 
         Ok(state)
     }
@@ -128,13 +137,14 @@ fn compute_state(
     events: Vec<tree_contract::VertexInsertedFilter>,
     previous_state: TreeState,
 ) -> crate::error::Result<TreeState> {
-    let tree = events
-        .into_iter()
-        .try_fold(previous_state.tree, |tree, event| {
-            tree.unwrap_or_default()
-                .insert_vertex(event.parent)
-                .map(|tree| Some(tree))
-        })?;
+    let tree =
+        events
+            .into_iter()
+            .try_fold(previous_state.tree, |tree, event| {
+                tree.unwrap_or_default()
+                    .insert_vertex(event.parent)
+                    .map(|tree| Some(tree))
+            })?;
 
     Ok(TreeState {
         identifier: previous_state.identifier,

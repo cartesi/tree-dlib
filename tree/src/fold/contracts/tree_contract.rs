@@ -18,11 +18,10 @@ mod tree_mod {
     };
     #[doc = "Tree was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
-    pub static TREE_ABI: ethers_contract::Lazy<ethers_core::abi::Abi> = ethers_contract::Lazy::new(
-        || {
+    pub static TREE_ABI: ethers_contract::Lazy<ethers_core::abi::Abi> =
+        ethers_contract::Lazy::new(|| {
             serde_json :: from_str ("[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"_parent\",\"type\":\"uint32\"}],\"name\":\"VertexInserted\",\"type\":\"event\"}]") . expect ("invalid abi")
-        },
-    );
+        });
     #[derive(Clone)]
     pub struct Tree<M>(ethers_contract::Contract<M>);
     impl<M> std::ops::Deref for Tree<M> {
@@ -46,7 +45,11 @@ mod tree_mod {
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            let contract = ethers_contract::Contract::new(address.into(), TREE_ABI.clone(), client);
+            let contract = ethers_contract::Contract::new(
+                address.into(),
+                TREE_ABI.clone(),
+                client,
+            );
             Self(contract)
         }
         #[doc = "Gets the contract's `VertexInserted` event"]
@@ -56,11 +59,15 @@ mod tree_mod {
             self.0.event()
         }
         #[doc = r" Returns an [`Event`](ethers_contract::builders::Event) builder for all events of this contract"]
-        pub fn events(&self) -> ethers_contract::builders::Event<M, VertexInsertedFilter> {
+        pub fn events(
+            &self,
+        ) -> ethers_contract::builders::Event<M, VertexInsertedFilter> {
             self.0.event_with_filter(Default::default())
         }
     }
-    #[derive(Clone, Debug, Default, Eq, PartialEq, ethers_contract :: EthEvent)]
+    #[derive(
+        Clone, Debug, Default, Eq, PartialEq, ethers_contract :: EthEvent,
+    )]
     #[ethevent(name = "VertexInserted", abi = "VertexInserted(uint256,uint32)")]
     pub struct VertexInsertedFilter {
         #[ethevent(indexed)]
