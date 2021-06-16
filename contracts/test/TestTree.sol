@@ -41,6 +41,14 @@ contract TestTree {
         t.insertVertex(0, _parent);
     }
 
+    function getDeepest() public view returns (uint32, uint32) {
+        return t.getDeepest();
+    }
+
+    function getDepth(uint32 _vertex) public view returns (uint32) {
+        return t.getDepth(_vertex);
+    }
+
     function getVertex(uint32 _vertex)
         public
         view

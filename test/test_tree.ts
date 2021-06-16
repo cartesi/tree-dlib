@@ -76,6 +76,11 @@ describe("TestTree", async () => {
             vertex9.ancestors,
             "Vertex9 ancestors should match"
         ).to.deep.equal(vertex9Ancestors);
+
+        // requirement
+        await expect(
+            testTree.getVertex(vertex9Index + 1),
+        ).to.be.revertedWith("vertex index exceeds current tree size");
     });
 
     it("getAncestorAtDepth", async () => {
@@ -120,5 +125,47 @@ describe("TestTree", async () => {
             await testTree.getAncestorAtDepth(vertex9Index, 0),
             "Ancestor at depth should match"
         ).to.equal(0);
+
+        // requirements
+        await expect(
+            testTree.getAncestorAtDepth(vertex9Index + 1, 0),
+        ).to.be.revertedWith("vertex index exceeds current tree size");
+
+        await expect(
+            testTree.getAncestorAtDepth(vertex9Index, vertex9Depth + 1),
+        ).to.be.revertedWith("search depth deeper than vertex depth");
+
+        // branch
+        for (const i of [1, 2, 3, 4, 5, 6, 7]) {
+            expect(
+                await testTree.getAncestorAtDepth(vertex9Index, i),
+                "Ancestor at depth should match"
+            ).to.equal(i);
+        }
+
+    });
+
+    it("getter functions", async () => {
+        const initialTreeSize = 8;
+        const vertex7Index = 7;
+        const vertex7Depth = 7;
+
+        // tree size
+        expect(
+            await testTree.getTreeSize(),
+            "Initial tree size should match"
+        ).to.equal(initialTreeSize);
+
+        // deepest
+        expect(
+            await testTree.getDeepest(),
+            "Deepest vertex should match"
+        ).to.deep.equal([vertex7Index, vertex7Depth]);
+
+        // depth
+        expect(
+            await testTree.getDepth(vertex7Index),
+            "Depth of deepest vertex should match"
+        ).to.equal(vertex7Depth);
     });
 });
