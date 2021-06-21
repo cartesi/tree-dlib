@@ -38,7 +38,7 @@ describe("TestTree", async () => {
     it("insertVertex", async () => {
         await expect(
             testTree.insertVertex(8),
-            "Insertion to invalid parent index"
+            "insertVertex should revert if parent index is invalid"
         ).to.be.revertedWith("parent index exceeds current tree size");
 
         const vertex7Index = 7;
@@ -80,6 +80,7 @@ describe("TestTree", async () => {
         // requirement
         await expect(
             testTree.getVertex(vertex9Index + 1),
+            "getVertex should revert if vertex index is invalid"
         ).to.be.revertedWith("vertex index exceeds current tree size");
     });
 
@@ -129,10 +130,12 @@ describe("TestTree", async () => {
         // requirements
         await expect(
             testTree.getAncestorAtDepth(vertex9Index + 1, 0),
+            "getAncestorAtDepth should revert if vertex index is invalid"
         ).to.be.revertedWith("vertex index exceeds current tree size");
 
         await expect(
             testTree.getAncestorAtDepth(vertex9Index, vertex9Depth + 1),
+            "getAncestorAtDepth should revert if target deoth is invalid"
         ).to.be.revertedWith("search depth deeper than vertex depth");
 
         // branch
