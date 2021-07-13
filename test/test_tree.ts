@@ -2,19 +2,13 @@ import { expect, use } from "chai";
 import { deployments, ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 
-import { TestTree } from "../src/types/TestTree";
-import { TestTree__factory } from "../src/types/factories/TestTree__factory";
+import { TestTree, TestTree__factory } from "../src/types";
 
 use(solidity);
 
 describe("TestTree", async () => {
     let testTree: TestTree;
     const TreeId = 0;
-    // const TestTreeString = ethers.utils.toUtf8Bytes("TestTree");
-    // var TestTreeStringBytes = "0x"
-    // for (var i = 0; i < TestTreeString.length; i++) {
-    //     TestTreeStringBytes += TestTreeString[i].toString(16);
-    // }
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -35,7 +29,7 @@ describe("TestTree", async () => {
         testTree = TestTree__factory.connect(address, user);
     });
 
-    it("insertVertex", async () => {
+    it("test insertVertex", async () => {
         await expect(
             testTree.insertVertex(8),
             "insertVertex should revert if parent index is invalid"
@@ -84,7 +78,7 @@ describe("TestTree", async () => {
         ).to.be.revertedWith("vertex index exceeds current tree size");
     });
 
-    it("getAncestorAtDepth", async () => {
+    it("test getAncestorAtDepth", async () => {
         const vertex7Index = 7;
         const vertex8Index = 8;
         const vertex9Index = 9;

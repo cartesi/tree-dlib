@@ -22,12 +22,12 @@
 import { HardhatUserConfig } from "hardhat/config";
 import { HttpNetworkUserConfig } from "hardhat/types";
 
-import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
-import "solidity-coverage";
-import "hardhat-typechain";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-etherscan";
+import "@typechain/hardhat";
 import "hardhat-deploy";
-import "@tenderly/hardhat-tenderly";
+import "solidity-coverage";
 
 // read MNEMONIC from env variable
 let mnemonic = process.env.MNEMONIC;
@@ -68,12 +68,24 @@ const config: HardhatUserConfig = {
         }
     },
     solidity: {
-        version: "0.7.4",
-        settings: {
-            optimizer: {
-                enabled: true
-            }
-        }
+        compilers: [
+            {
+                version: "0.7.4",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                    },
+                },
+            },
+            {
+                version: "0.8.4",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                    },
+                },
+            },
+        ],
     },
     paths: {
         artifacts: "artifacts",
@@ -84,15 +96,14 @@ const config: HardhatUserConfig = {
         outDir: "src/types",
         target: "ethers-v5",
     },
+    etherscan: {
+        apiKey: process.env.ETHERSCAN_API_KEY,
+    },
     namedAccounts: {
         deployer: {
             default: 0
         }
     },
-    tenderly: {
-        username: 'cartesi',
-        project: 'tree'
-    }
 };
 
 export default config;
