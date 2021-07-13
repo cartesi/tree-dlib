@@ -11,8 +11,8 @@
 // specific language governing permissions and limitations under the License.
 
 /// @title Test Tree
-pragma solidity ^0.7.0;
-pragma experimental ABIEncoderV2;
+pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 import "../Tree.sol";
 

@@ -11,10 +11,12 @@
 // specific language governing permissions and limitations under the License.
 
 /// @title Tree Library
-pragma solidity ^0.7.0;
-pragma experimental ABIEncoderV2;
+pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 library Tree {
+    uint32 constant UINT32_MAX = 2**32 - 1;
+
     struct TreeCtx {
         Vertex[] vertices;
         uint32 deepestVertex;
@@ -106,8 +108,9 @@ library Tree {
         uint32 vertex = _vertex;
 
         while (_depth != _tree.vertices[vertex].depth) {
-            uint32[] memory ancestorsOfVertex =
-                _tree.vertices[vertex].ancestors;
+            uint32[] memory ancestorsOfVertex = _tree
+            .vertices[vertex]
+            .ancestors;
             uint32 ancestorsLength = uint32(ancestorsOfVertex.length);
             // start searching from the oldest ancestor (smallest depth)
             // example: search ancestor at depth d(20, b'0001 0100) from vertex v at depth (176, b'1011 0000)
@@ -205,7 +208,7 @@ library Tree {
         //                            -> b'1000 0000
         while (i < count) {
             depths[i] = depth;
-            depth = depth - (uint32(1) << i);
+            depth = depth & (UINT32_MAX << (i + 1));
             ++i;
         }
 
