@@ -1,4 +1,4 @@
-use dispatcher::state_fold::{Access, StateFold};
+use state_fold::{Access, StateFold};
 use tree::fold::tree_delegate::TreeFoldDelegate;
 
 use ethers::providers::{Http, Middleware, Provider};

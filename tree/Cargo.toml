@@ -6,7 +6,8 @@ homepage = "https://cartesi.io"
 edition = "2018"
 
 [dependencies]
-dispatcher = { path = "../dispatcher-v2/dispatcher"}
+state-fold = { git = "https://github.com/cartesi/state-fold", rev = "ace5480" }
+offchain-core = { git = "https://github.com/cartesi/offchain-utils", rev = "bcab565" }
 
 async-trait = "0.1"
 ethers = { git = "https://github.com/gakonst/ethers-rs", rev = "4690f8e" }

@@ -2,13 +2,13 @@ use crate::tree_lib::Tree;
 
 use super::contracts::tree_contract;
 
-use dispatcher::state_fold::{
+use offchain_core::types::Block;
+use state_fold::{
     delegate_access::{FoldAccess, SyncAccess},
     error::*,
-    types::*,
+    types::{BlockState, StateFoldDelegate},
     utils as fold_utils,
 };
-use dispatcher::types::Block;
 
 use async_trait::async_trait;
 use ethers::types::{Address, U256};
