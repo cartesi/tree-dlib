@@ -78,6 +78,33 @@ describe("TestTree", async () => {
         ).to.be.revertedWith("vertex index exceeds current tree size");
     });
 
+    it("test ancestors greater than 255", async () => {
+        for (var i = 0; i < 258; ++i) {
+            await testTree.insertVertex(i + 7);
+        }
+
+        const vertex256Index = 256;
+        const vertex256Ancestors = [255, 254, 252, 248, 240, 224, 192, 128, 0];
+
+        const vertex256 = await (testTree.getVertex(vertex256Index));
+
+        expect(
+            vertex256.ancestors,
+            "Verte256 ancestors should match"
+        ).to.deep.equal(vertex256Ancestors);
+
+        const vertex264Index = 264;
+        const vertex264Ancestors = [263, 262, 260, 256];
+
+        const vertex264 = await (testTree.getVertex(vertex264Index));
+
+        expect(
+            vertex264.ancestors,
+            "Vertex264 ancestors should match"
+        ).to.deep.equal(vertex264Ancestors);
+
+    });
+
     it("test getAncestorAtDepth", async () => {
         const vertex7Index = 7;
         const vertex8Index = 8;
