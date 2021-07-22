@@ -16,6 +16,9 @@ pragma solidity ^0.8.0;
 
 library Tree {
     uint32 constant UINT32_MAX = 2**32 - 1;
+    // count of trailing ones for [0:256)
+    bytes constant trailing1table =
+        hex"00010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010006000100020001000300010002000100040001000200010003000100020001000500010002000100030001000200010004000100020001000300010002000100070001000200010003000100020001000400010002000100030001000200010005000100020001000300010002000100040001000200010003000100020001000600010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010008";
 
     struct TreeCtx {
         Vertex[] vertices;
@@ -46,13 +49,15 @@ library Tree {
         uint32 _parent
     ) public returns (uint32) {
         Vertex memory v;
-        if (_tree.vertices.length == 0) {
+        uint32 treeSize = uint32(_tree.vertices.length);
+
+        if (treeSize == 0) {
             // insert the very first vertex into the tree
             v = Vertex(new uint32[](0), 0);
         } else {
             // insert vertex to the tree attaching to another vertex
             require(
-                _parent < _tree.vertices.length,
+                _parent < treeSize,
                 "parent index exceeds current tree size"
             );
 
@@ -73,17 +78,16 @@ library Tree {
             v = Vertex(ancestors, parentDepth + 1);
         }
 
-        uint32 index = getTreeSize(_tree);
         _tree.vertices.push(v);
 
         if (v.depth > _tree.deepestDepth) {
             _tree.deepestDepth = v.depth;
-            _tree.deepestVertex = index;
+            _tree.deepestVertex = treeSize;
         }
 
         emit VertexInserted(_id, _parent);
 
-        return index;
+        return treeSize;
     }
 
     /// @notice Search an ancestor of a vertex in the tree at a certain depth
@@ -108,7 +112,7 @@ library Tree {
         uint32 vertex = _vertex;
 
         while (_depth != _tree.vertices[vertex].depth) {
-            uint32[] memory ancestorsOfVertex = _tree
+            uint32[] storage ancestorsOfVertex = _tree
             .vertices[vertex]
             .ancestors;
             uint32 ancestorsLength = uint32(ancestorsOfVertex.length);
@@ -121,17 +125,18 @@ library Tree {
             // given that ancestorsIndex is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
             // so the continue condition has to be ancestorsIndex < ancestorsLength,
             // can't be ancestorsIndex >= 0
-            for (
-                uint32 ancestorsIndex = ancestorsLength - 1;
-                ancestorsIndex < ancestorsLength;
-                --ancestorsIndex
-            ) {
-                vertex = ancestorsOfVertex[ancestorsIndex];
-                Vertex storage ancestor = _tree.vertices[vertex];
+            unchecked {
+                for (
+                    uint32 ancestorsIndex = ancestorsLength - 1;
+                    ancestorsIndex < ancestorsLength;
+                    --ancestorsIndex
+                ) {
+                    vertex = ancestorsOfVertex[ancestorsIndex];
 
-                // stop at the ancestor who's closest to the target depth
-                if (ancestor.depth >= _depth) {
-                    break;
+                    // stop at the ancestor who's closest to the target depth
+                    if (_tree.vertices[vertex].depth >= _depth) {
+                        break;
+                    }
                 }
             }
         }
@@ -192,24 +197,36 @@ library Tree {
         uint32 depth = _depth - 1;
         uint32 count = 1;
 
-        // get count of trailing ones of _depth in the binary representation
-        while (depth & 1 > 0) {
-            depth = depth >> 1;
-            ++count;
+        // algorithm 1
+        // get count of trailing ones of _depth from trailing1table
+        for (uint256 i = 0; i < 4; ++i) {
+            uint32 partialCount = uint8(trailing1table[depth >> (i * 8) & 0xff]);
+            count = count + partialCount;
+            if (partialCount != 8) {
+                break;
+            }
         }
 
-        depth = _depth - 1;
+        // algorithm 2
+        // get count of trailing ones by counting them
+        // {
+        //     while (depth & 1 > 0) {
+        //         depth = depth >> 1;
+        //         ++count;
+        //     }
+
+        //     depth = _depth - 1;
+        // }
+
         uint32[] memory depths = new uint32[](count);
-        uint32 i = 0;
 
         // construct the depths array by removing the trailing ones from lsb one by one
         // example _depth = b'1100 0000: b'1011 1111 -> b'1011 1110 -> b'1011 1100
         //                            -> b'1011 1000 -> b'1011 0000 -> b'1010 0000
         //                            -> b'1000 0000
-        while (i < count) {
+        for (uint32 i = 0; i < count; ++i) {
             depths[i] = depth;
             depth = depth & (UINT32_MAX << (i + 1));
-            ++i;
         }
 
         return depths;
