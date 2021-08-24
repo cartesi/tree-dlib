@@ -2404,6 +2404,7 @@ dependencies = [
  "futures",
  "im",
  "offchain-core",
+ "serde",
  "serde_json",
  "snafu",
  "state-fold",
