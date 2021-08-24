@@ -29,11 +29,11 @@ impl Ord for VertexKey {
 pub struct Vertex {
     depth: u32,
     index: u32,
-    parent: Option<Arc<Vertex>>,
+    parent: Option<u32>,
 }
 
 impl Vertex {
-    pub fn get_parent(&self) -> Option<Arc<Vertex>> {
+    pub fn get_parent(&self) -> Option<u32> {
         self.parent.clone()
     }
 
@@ -58,7 +58,8 @@ impl Tree {
     pub fn insert_vertex(&self, event: u32) -> Result<Self> {
         let parent_index = event;
 
-        let mut parent = self.get_vertex_rc(parent_index);
+        let mut parent = Some(parent_index);
+        let parent_vertex_opt = self.get_vertex_rc(parent_index);
         let index = self.vertices.len() as u32;
         let depth: u32;
 
@@ -66,13 +67,15 @@ impl Tree {
             // set parent to none for genesis block
             parent = None;
             depth = 0;
-        } else if parent.is_none() {
-            return TreeMalformed {
-                err: "Incoming vertex doesn't have a valid parent",
-            }
-            .fail();
         } else {
-            depth = parent.clone().unwrap().depth + 1;
+            if let Some(parent_vertex) = parent_vertex_opt {
+                depth = parent_vertex.depth + 1;
+            } else {
+                return TreeMalformed {
+                    err: "Incoming vertex doesn't have a valid parent",
+                }
+                .fail();
+            }
         }
 
         let new_deepest = self.deepest.update(VertexKey { depth, index });
@@ -96,42 +99,58 @@ impl Tree {
         index: u32,
         depth: u32,
     ) -> Result<Arc<Vertex>> {
-        let vertex = self.get_vertex_rc(index);
+        let vertex_opt = self.get_vertex_rc(index);
 
-        if vertex.is_none() {
+        if let Some(vertex) = vertex_opt {
+            let vertex_depth = vertex.depth;
+
+            if vertex_depth == depth {
+                // vertex at index is the ancestor at depth itself
+                Ok(vertex)
+            } else if vertex_depth < depth {
+                // invalid index or depth
+                VertexNotFound {
+                    err: "Vertex is not deeper than ancestor",
+                }
+                .fail()
+            } else {
+                let mut parent_opt = vertex.parent.clone();
+
+                // looping through the parent until it reaches `depth` or none
+                loop {
+                    if let Some(parent) = parent_opt {
+                        let parent_vertex = self
+                            .get_vertex_rc(parent)
+                            .clone()
+                            .ok_or(snafu::NoneError)
+                            .context(TreeMalformed {
+                                err: "Ancestor at depth not found",
+                            })?;
+
+                        if parent_vertex.depth <= depth {
+                            break;
+                        }
+
+                        parent_opt = parent_vertex.parent.clone();
+                    } else {
+                        break;
+                    }
+                }
+
+                parent_opt
+                    .and_then(|p| self.get_vertex_rc(p))
+                    .filter(|p| p.depth == depth)
+                    .ok_or(snafu::NoneError)
+                    .context(TreeMalformed {
+                        err: "Ancestor at depth not found",
+                    })
+            }
+        } else {
             // vertex not exist at index
             return VertexNotFound {
                 err: "Invalid index",
             }
             .fail();
-        }
-
-        let v = vertex.unwrap();
-        let vertex_depth = v.depth;
-
-        if vertex_depth == depth {
-            // vertex at index is the ancestor at depth itself
-            Ok(v)
-        } else if vertex_depth < depth {
-            // invalid index or depth
-            VertexNotFound {
-                err: "Vertex is not deeper than ancestor",
-            }
-            .fail()
-        } else {
-            let mut parent = v.parent.clone();
-
-            // looping through the parent until it reaches `depth` or none
-            while parent.is_some() && parent.clone().unwrap().depth > depth {
-                parent = parent.unwrap().parent.clone();
-            }
-
-            parent
-                .filter(|p| p.depth == depth)
-                .ok_or(snafu::NoneError)
-                .context(TreeMalformed {
-                    err: "Ancestor at depth not found",
-                })
         }
     }
 
