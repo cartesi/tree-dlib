@@ -10,7 +10,7 @@ use std::sync::Arc;
 /// sorting. The deepest vertex is defined as largest `depth`, and smallest
 /// `index` when the `depth`s are equal, meaning the vertex is oldest in that
 /// `depth`
-#[derive(Clone, Debug, Eq, PartialOrd, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialOrd, PartialEq, Serialize)]
 pub struct VertexKey {
     depth: u32,
     index: u32,
@@ -29,12 +29,6 @@ impl Ord for VertexKey {
             Ordering::Equal => other.index.cmp(&self.index),
             _ => depth_cmp,
         }
-    }
-}
-
-impl std::fmt::Display for VertexKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}_{}", self.depth, self.index)
     }
 }
 
@@ -59,28 +53,10 @@ impl Vertex {
     }
 }
 
-#[derive(Clone, Debug, Default)]
-pub struct Vertices(pub HashMap<u32, Arc<Vertex>>);
-
-impl From<HashMap<u32, Arc<Vertex>>> for Vertices {
-    fn from(map: HashMap<u32, Arc<Vertex>>) -> Self {
-        Vertices(map)
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Deepest(pub OrdSet<VertexKey>);
-
-impl From<OrdSet<VertexKey>> for Deepest {
-    fn from(set: OrdSet<VertexKey>) -> Self {
-        Deepest(set)
-    }
-}
-
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Tree {
-    vertices: Vertices,
-    deepest: Deepest,
+    vertices: HashMap<u32, Arc<Vertex>>,
+    deepest: OrdSet<VertexKey>,
 }
 
 impl Tree {
@@ -91,7 +67,7 @@ impl Tree {
 
         let mut parent = Some(parent_index);
         let parent_vertex_opt = self.get_vertex_rc(parent_index);
-        let index = self.vertices.0.len() as u32;
+        let index = self.vertices.len() as u32;
         let depth: u32;
 
         if index == 0 {
@@ -109,14 +85,14 @@ impl Tree {
             }
         }
 
-        let new_deepest = self.deepest.0.update(VertexKey { depth, index });
+        let new_deepest = self.deepest.update(VertexKey { depth, index });
 
         let vertex: Vertex = Vertex {
             index,
             depth,
             parent,
         };
-        let new_vertices = self.vertices.0.update(index, Arc::new(vertex));
+        let new_vertices = self.vertices.update(index, Arc::new(vertex));
 
         Ok(Tree {
             deepest: new_deepest.into(),
@@ -197,20 +173,17 @@ impl Tree {
 
     /// get index of deepest vertex
     pub fn get_deepest(&self) -> Option<u32> {
-        self.deepest.0.get_max().map(|key| key.index)
+        self.deepest.get_max().map(|key| key.index)
     }
 
     /// get vertex by index
     pub fn get_vertex(&self, index: u32) -> Option<&Vertex> {
-        self.vertices
-            .0
-            .get(&index)
-            .map(|vertex| Arc::as_ref(vertex))
+        self.vertices.get(&index).map(|vertex| Arc::as_ref(vertex))
     }
 
     /// get vertex by index with reference counter
     pub fn get_vertex_rc(&self, index: u32) -> Option<Arc<Vertex>> {
-        self.vertices.0.get(&index).map(|vertex| Arc::clone(vertex))
+        self.vertices.get(&index).map(|vertex| Arc::clone(vertex))
     }
 
     /// is the `vertex` on longest valid path with minimal `distance`
@@ -241,7 +214,7 @@ impl Tree {
 
     /// get tree size
     pub fn size(&self) -> usize {
-        self.vertices.0.len()
+        self.vertices.len()
     }
 }
 

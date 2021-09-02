@@ -1202,6 +1202,7 @@ dependencies = [
  "bitmaps",
  "rand_core 0.5.1",
  "rand_xoshiro",
+ "serde",
  "sized-chunks",
  "typenum",
  "version_check",
