@@ -20,8 +20,7 @@ describe("TestTree", async () => {
 
         const [user] = await ethers.getSigners();
 
-        const TreeAddress = (await deployments.get("Tree"))
-            .address;
+        const TreeAddress = (await deployments.get("Tree")).address;
         const { deploy } = deployments;
         const { address } = await deploy("TestTree", {
             from: await user.getAddress(),
@@ -50,9 +49,10 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(Object.keys(state.vertices).length, "Tree should remain size 8").to.equal(
-                8
-            );
+            expect(
+                Object.keys(state.vertices).length,
+                "Tree should remain size 8"
+            ).to.equal(8);
         }
 
         const vertex7Index = 7;
@@ -69,7 +69,7 @@ describe("TestTree", async () => {
             .to.emit(testTree, "VertexInserted")
             .withArgs(TreeId, vertex7Index);
 
-        const vertex8 = await (testTree.getVertex(vertex8Index));
+        const vertex8 = await testTree.getVertex(vertex8Index);
 
         expect(
             vertex8.ancestors,
@@ -79,13 +79,19 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(Object.keys(state.vertices).length, "Tree should become size 9").to.equal(
-                9
-            );
+            expect(
+                Object.keys(state.vertices).length,
+                "Tree should become size 9"
+            ).to.equal(9);
 
-            expect(state.vertices["8"], "Tree should include new vertex").to.deep.equal(
-                {depth: vertex8Index, index: vertex8Index, parent: vertex7Index}
-            );
+            expect(
+                state.vertices["8"],
+                "Tree should include new vertex"
+            ).to.deep.equal({
+                depth: vertex8Index,
+                index: vertex8Index,
+                parent: vertex7Index,
+            });
         }
 
         // vertex9
@@ -96,7 +102,7 @@ describe("TestTree", async () => {
             .to.emit(testTree, "VertexInserted")
             .withArgs(TreeId, vertex7Index);
 
-        const vertex9 = await (testTree.getVertex(vertex9Index));
+        const vertex9 = await testTree.getVertex(vertex9Index);
 
         expect(
             vertex9.ancestors,
@@ -106,13 +112,19 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(Object.keys(state.vertices).length, "Tree should become size 10").to.equal(
-                10
-            );
+            expect(
+                Object.keys(state.vertices).length,
+                "Tree should become size 10"
+            ).to.equal(10);
 
-            expect(state.vertices["9"], "Tree should include new vertex").to.deep.equal(
-                {depth: vertex8Index, index: vertex9Index, parent: vertex7Index}
-            );
+            expect(
+                state.vertices["9"],
+                "Tree should include new vertex"
+            ).to.deep.equal({
+                depth: vertex8Index,
+                index: vertex9Index,
+                parent: vertex7Index,
+            });
         }
 
         // requirement
@@ -124,7 +136,10 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(state.vertices["10"], "Tree should include valid vertices only").to.be.undefined;
+            expect(
+                state.vertices["10"],
+                "Tree should include valid vertices only"
+            ).to.be.undefined;
         }
     });
 
@@ -136,7 +151,7 @@ describe("TestTree", async () => {
         const vertex256Index = 256;
         const vertex256Ancestors = [255, 254, 252, 248, 240, 224, 192, 128, 0];
 
-        const vertex256 = await (testTree.getVertex(vertex256Index));
+        const vertex256 = await testTree.getVertex(vertex256Index);
 
         expect(
             vertex256.ancestors,
@@ -146,13 +161,12 @@ describe("TestTree", async () => {
         const vertex264Index = 264;
         const vertex264Ancestors = [263, 262, 260, 256];
 
-        const vertex264 = await (testTree.getVertex(vertex264Index));
+        const vertex264 = await testTree.getVertex(vertex264Index);
 
         expect(
             vertex264.ancestors,
             "Vertex264 ancestors should match"
         ).to.deep.equal(vertex264Ancestors);
-
     });
 
     it("test getAncestorAtDepth", async () => {
@@ -216,7 +230,6 @@ describe("TestTree", async () => {
                 "Ancestor at depth should match"
             ).to.equal(i);
         }
-
     });
 
     it("getter functions", async () => {
@@ -233,9 +246,10 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(Object.keys(state.vertices).length, "Tree should remain initial size").to.equal(
-                initialTreeSize
-            );
+            expect(
+                Object.keys(state.vertices).length,
+                "Tree should remain initial size"
+            ).to.equal(initialTreeSize);
         }
 
         // deepest
@@ -247,9 +261,10 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(state.deepest[state.deepest.length - 1], "Tree deepest vertex should match").to.deep.equal(
-                { depth: vertex7Depth, index: vertex7Index }
-            );
+            expect(
+                state.deepest[state.deepest.length - 1],
+                "Tree deepest vertex should match"
+            ).to.deep.equal({ depth: vertex7Depth, index: vertex7Index });
         }
 
         // depth
@@ -261,9 +276,10 @@ describe("TestTree", async () => {
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
 
-            expect(state.vertices["7"].depth, "Depth of vertex should match").to.equal(
-                vertex7Depth
-            );
+            expect(
+                state.vertices["7"].depth,
+                "Depth of vertex should match"
+            ).to.equal(vertex7Depth);
         }
     });
 });
