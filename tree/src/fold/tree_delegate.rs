@@ -17,25 +17,19 @@ use snafu::ResultExt;
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
 pub struct TreeState {
+    // call_address is the contract address who owns the library object
+    pub caller_address: Address,
     pub identifier: U256,
     pub tree: Option<Tree>,
 }
 
 /// Tree StateFold Delegate, which implements `sync` and `fold`.
-pub struct TreeFoldDelegate {
-    // call_address is the contract address who owns the library object
-    caller_address: Address,
-}
-
-impl TreeFoldDelegate {
-    pub fn new(caller_address: Address) -> Self {
-        TreeFoldDelegate { caller_address }
-    }
-}
+#[derive(Default)]
+pub struct TreeFoldDelegate {}
 
 #[async_trait]
 impl StateFoldDelegate for TreeFoldDelegate {
-    type InitialState = U256;
+    type InitialState = (U256, Address);
     type Accumulator = TreeState;
     type State = BlockState<Self::Accumulator>;
 
@@ -45,11 +39,11 @@ impl StateFoldDelegate for TreeFoldDelegate {
         block: &Block,
         access: &A,
     ) -> SyncResult<Self::Accumulator, A> {
-        let identifier = *initial_state;
+        let (identifier, caller_address) = *initial_state;
 
         let contract = access
             .build_sync_contract(
-                self.caller_address,
+                caller_address,
                 block.number,
                 tree_contract::Tree::new,
             )
@@ -68,6 +62,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
         let state = compute_state(
             inserted_events,
             TreeState {
+                caller_address,
                 tree: None,
                 identifier,
             },
@@ -89,10 +84,11 @@ impl StateFoldDelegate for TreeFoldDelegate {
         access: &A,
     ) -> FoldResult<Self::Accumulator, A> {
         let identifier = previous_state.identifier;
+        let caller_address = previous_state.caller_address;
 
         // Check if there was (possibly) some log emited on this block.
         let bloom = block.logs_bloom;
-        if !(fold_utils::contains_address(&bloom, &self.caller_address)
+        if !(fold_utils::contains_address(&bloom, &caller_address)
             && fold_utils::contains_topic(&bloom, &identifier))
         {
             return Ok(previous_state.clone());
@@ -100,7 +96,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
 
         let contract = access
             .build_fold_contract(
-                self.caller_address,
+                caller_address,
                 block.hash,
                 tree_contract::Tree::new,
             )
@@ -147,6 +143,7 @@ fn compute_state(
             })?;
 
     Ok(TreeState {
+        caller_address: previous_state.caller_address,
         identifier: previous_state.identifier,
         tree,
     })

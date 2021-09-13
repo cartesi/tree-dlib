@@ -25,3 +25,4 @@
 pub mod error;
 pub mod fold;
 pub mod tree_lib;
+pub mod tree_server;

@@ -3,10 +3,15 @@ import { deployments, ethers } from "hardhat";
 import { solidity } from "ethereum-waffle";
 
 import { TestTree, TestTree__factory } from "../src/types";
+import { getState } from "./getState";
 
 use(solidity);
 
 describe("TestTree", async () => {
+    let enableDelegate = process.env["DELEGATE_TEST"];
+
+    let initialState: string;
+
     let testTree: TestTree;
     const TreeId = 0;
 
@@ -27,6 +32,13 @@ describe("TestTree", async () => {
         });
 
         testTree = TestTree__factory.connect(address, user);
+
+        if (enableDelegate) {
+            initialState = JSON.stringify({
+                tree_address: address,
+                pos_instance: "0x0",
+            });
+        }
     });
 
     it("test insertVertex", async () => {
@@ -34,6 +46,14 @@ describe("TestTree", async () => {
             testTree.insertVertex(8),
             "insertVertex should revert if parent index is invalid"
         ).to.be.revertedWith("parent index exceeds current tree size");
+
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(Object.keys(state.vertices).length, "Tree should remain size 8").to.equal(
+                8
+            );
+        }
 
         const vertex7Index = 7;
         const vertex8Index = 8;
@@ -56,6 +76,18 @@ describe("TestTree", async () => {
             "Vertex8 ancestors should match"
         ).to.deep.equal(vertex8Ancestors);
 
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(Object.keys(state.vertices).length, "Tree should become size 9").to.equal(
+                9
+            );
+
+            expect(state.vertices["8"], "Tree should include new vertex").to.deep.equal(
+                {depth: vertex8Index, index: vertex8Index, parent: vertex7Index}
+            );
+        }
+
         // vertex9
         await expect(
             testTree.insertVertex(vertex7Index),
@@ -71,11 +103,29 @@ describe("TestTree", async () => {
             "Vertex9 ancestors should match"
         ).to.deep.equal(vertex9Ancestors);
 
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(Object.keys(state.vertices).length, "Tree should become size 10").to.equal(
+                10
+            );
+
+            expect(state.vertices["9"], "Tree should include new vertex").to.deep.equal(
+                {depth: vertex8Index, index: vertex9Index, parent: vertex7Index}
+            );
+        }
+
         // requirement
         await expect(
             testTree.getVertex(vertex9Index + 1),
             "getVertex should revert if vertex index is invalid"
         ).to.be.revertedWith("vertex index exceeds current tree size");
+
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(state.vertices["10"], "Tree should include valid vertices only").to.be.undefined;
+        }
     });
 
     it("test ancestors greater than 255", async () => {
@@ -180,16 +230,40 @@ describe("TestTree", async () => {
             "Initial tree size should match"
         ).to.equal(initialTreeSize);
 
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(Object.keys(state.vertices).length, "Tree should remain initial size").to.equal(
+                initialTreeSize
+            );
+        }
+
         // deepest
         expect(
             await testTree.getDeepest(),
             "Deepest vertex should match"
         ).to.deep.equal([vertex7Index, vertex7Depth]);
 
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(state.deepest[state.deepest.length - 1], "Tree deepest vertex should match").to.deep.equal(
+                { depth: vertex7Depth, index: vertex7Index }
+            );
+        }
+
         // depth
         expect(
             await testTree.getDepth(vertex7Index),
             "Depth of deepest vertex should match"
         ).to.equal(vertex7Depth);
+
+        if (enableDelegate) {
+            let state = JSON.parse(await getState(initialState));
+
+            expect(state.vertices["7"].depth, "Depth of vertex should match").to.equal(
+                vertex7Depth
+            );
+        }
     });
 });

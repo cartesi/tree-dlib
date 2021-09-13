@@ -6,6 +6,7 @@ coverage*
 deployments/localhost
 dist
 node_modules
+src/proto/stateserver*
 **/src/types
 target/
 test/*/
@@ -14,4 +15,3 @@ test/*/
 .node*
 *.bin
 *.abi
-TestTree.address
