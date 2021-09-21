@@ -95,8 +95,8 @@ impl Tree {
         let new_vertices = self.vertices.update(index, Arc::new(vertex));
 
         Ok(Tree {
-            deepest: new_deepest.into(),
-            vertices: new_vertices.into(),
+            deepest: new_deepest,
+            vertices: new_vertices,
         })
     }
 
