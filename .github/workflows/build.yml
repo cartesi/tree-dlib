@@ -1,15 +1,16 @@
 name: Build
-on: [push]
+on: [push, pull_request]
 jobs:
-  build:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '15'
-      - run: yarn install
-      - run: yarn test
-
-      - name: Check code format
-        run: cd tree && cargo fmt -p tree -- --check
+    build:
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: recursive
+                  token: ${{ secrets.CI_TOKEN }}
+            - uses: actions/setup-node@v1
+              with:
+                  node-version: "16"
+            - run: yarn install
+            - run: yarn prettier
+            - run: yarn test:coverage
