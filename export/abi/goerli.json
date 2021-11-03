@@ -1,0 +1,30 @@
+{
+  "name": "goerli",
+  "chainId": "5",
+  "contracts": {
+    "Tree": {
+      "address": "0xaAA7DB92A944319aC76Dc0E99cfD0D9fCE8dAa72",
+      "abi": [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint32",
+              "name": "_parent",
+              "type": "uint32"
+            }
+          ],
+          "name": "VertexInserted",
+          "type": "event"
+        }
+      ]
+    }
+  }
+}

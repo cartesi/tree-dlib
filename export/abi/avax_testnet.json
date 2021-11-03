@@ -1,0 +1,30 @@
+{
+  "name": "avax_testnet",
+  "chainId": "43113",
+  "contracts": {
+    "Tree": {
+      "address": "0x87916D9A2D492a416F5185dDb7936517b05219DE",
+      "abi": [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "_id",
+              "type": "uint256"
+            },
+            {
+              "indexed": false,
+              "internalType": "uint32",
+              "name": "_parent",
+              "type": "uint32"
+            }
+          ],
+          "name": "VertexInserted",
+          "type": "event"
+        }
+      ]
+    }
+  }
+}
