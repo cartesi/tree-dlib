@@ -11,9 +11,9 @@ name = "tree_server_main"
 path = "src/tree_server_main.rs"
 
 [dependencies]
-state-fold = { git = "https://github.com/cartesi/state-fold", rev = "64f9c0e" }
-offchain-core = { git = "https://github.com/cartesi/offchain-utils", rev = "38342b0" }
-state-server-grpc = { git = "https://github.com/cartesi/state-fold", rev = "64f9c0e" }
+state-fold = { git = "https://github.com/cartesi/state-fold", rev = "f5d4c72" }
+offchain-core = { git = "https://github.com/cartesi/offchain-utils", rev = "c4a9c05" }
+state-server-grpc = { git = "https://github.com/cartesi/state-fold", rev = "f5d4c72" }
 
 async-trait = "0.1"
 ethers = { version = "0.5.3", features = [ "legacy", "ws" ] }
@@ -26,7 +26,7 @@ serde = { version = "1.0.0", features = ["rc"] }
 serde_json = "1.0"
 snafu = "0.6"
 tokio = { version = "^1", features = ["sync"] }
-tonic = "0.4"
+tonic = "^0.5.2"
 
 [build-dependencies]
 ethers = { version = "0.5.3", features = [ "legacy", "ws" ] }

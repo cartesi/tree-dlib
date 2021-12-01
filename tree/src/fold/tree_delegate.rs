@@ -4,15 +4,22 @@ use super::contracts::tree_contract;
 
 use offchain_core::types::Block;
 use state_fold::{
-    delegate_access::{FoldAccess, SyncAccess},
-    error::*,
-    types::{BlockState, StateFoldDelegate},
-    utils as fold_utils,
+    utils as fold_utils, FoldMiddleware, Foldable, StateFoldEnvironment,
+    SyncMiddleware,
 };
 
 use async_trait::async_trait;
+use ethers::providers::Middleware;
 use ethers::types::{Address, U256};
-use snafu::ResultExt;
+use snafu::Snafu;
+use std::sync::Arc;
+
+#[derive(Debug, Snafu)]
+#[snafu(visibility = "pub")]
+pub enum TreeError {
+    #[snafu(display("Requested tree unavailable"))]
+    TreeUnavailable { err: String },
+}
 
 /// Tree dlib state, to be passed to and returned by fold.
 #[derive(Clone, Debug)]
@@ -23,31 +30,20 @@ pub struct TreeState {
     pub tree: Option<Tree>,
 }
 
-/// Tree StateFold Delegate, which implements `sync` and `fold`.
-#[derive(Default)]
-pub struct TreeFoldDelegate {}
-
 #[async_trait]
-impl StateFoldDelegate for TreeFoldDelegate {
+impl Foldable for TreeState {
     type InitialState = (U256, Address);
-    type Accumulator = TreeState;
-    type State = BlockState<Self::Accumulator>;
+    type Error = TreeError;
 
-    async fn sync<A: SyncAccess + Send + Sync>(
-        &self,
+    async fn sync<M: Middleware + 'static>(
         initial_state: &Self::InitialState,
-        block: &Block,
-        access: &A,
-    ) -> SyncResult<Self::Accumulator, A> {
+        _block: &Block,
+        _env: &StateFoldEnvironment<M>,
+        access: Arc<SyncMiddleware<M>>,
+    ) -> std::result::Result<Self, Self::Error> {
         let (identifier, caller_address) = *initial_state;
 
-        let contract = access
-            .build_sync_contract(
-                caller_address,
-                block.number,
-                tree_contract::Tree::new,
-            )
-            .await;
+        let contract = tree_contract::Tree::new(caller_address, access);
 
         // Get all inserted events.
         let inserted_events = contract
@@ -55,8 +51,11 @@ impl StateFoldDelegate for TreeFoldDelegate {
             .topic1(identifier)
             .query()
             .await
-            .context(SyncContractError {
-                err: "Error querying for vertex inserted",
+            .map_err(|e| {
+                TreeUnavailable {
+                    err: format!("Error querying for vertex inserted: {}", e),
+                }
+                .build()
             })?;
 
         let state = compute_state(
@@ -68,7 +67,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
             },
         )
         .map_err(|e| {
-            SyncDelegateError {
+            TreeUnavailable {
                 err: format!("Could not update tree state: {}", e),
             }
             .build()
@@ -77,12 +76,12 @@ impl StateFoldDelegate for TreeFoldDelegate {
         Ok(state)
     }
 
-    async fn fold<A: FoldAccess + Send + Sync>(
-        &self,
-        previous_state: &Self::Accumulator,
+    async fn fold<M: Middleware + 'static>(
+        previous_state: &Self,
         block: &Block,
-        access: &A,
-    ) -> FoldResult<Self::Accumulator, A> {
+        _env: &StateFoldEnvironment<M>,
+        access: Arc<FoldMiddleware<M>>,
+    ) -> std::result::Result<Self, Self::Error> {
         let identifier = previous_state.identifier;
         let caller_address = previous_state.caller_address;
 
@@ -94,13 +93,7 @@ impl StateFoldDelegate for TreeFoldDelegate {
             return Ok(previous_state.clone());
         }
 
-        let contract = access
-            .build_fold_contract(
-                caller_address,
-                block.hash,
-                tree_contract::Tree::new,
-            )
-            .await;
+        let contract = tree_contract::Tree::new(caller_address, access);
 
         // Get all inserted events.
         let inserted_events = contract
@@ -108,23 +101,22 @@ impl StateFoldDelegate for TreeFoldDelegate {
             .topic1(identifier)
             .query()
             .await
-            .context(FoldContractError {
-                err: "Error querying for vertex inserted",
+            .map_err(|e| {
+                TreeUnavailable {
+                    err: format!("Error querying for vertex inserted: {}", e),
+                }
+                .build()
             })?;
 
         let state = compute_state(inserted_events, previous_state.clone())
             .map_err(|e| {
-                FoldDelegateError {
+                TreeUnavailable {
                     err: format!("Could not update tree state: {}", e),
                 }
                 .build()
             })?;
 
         Ok(state)
-    }
-
-    fn convert(&self, state: &BlockState<Self::Accumulator>) -> Self::State {
-        state.clone()
     }
 }
 
