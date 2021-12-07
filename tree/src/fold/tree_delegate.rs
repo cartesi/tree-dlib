@@ -1,3 +1,4 @@
+use crate::error::*;
 use crate::tree_lib::Tree;
 
 use super::contracts::tree_contract;
@@ -11,18 +12,12 @@ use state_fold::{
 use async_trait::async_trait;
 use ethers::providers::Middleware;
 use ethers::types::{Address, U256};
-use snafu::Snafu;
+use serde::{Deserialize, Serialize};
+use snafu::ResultExt;
 use std::sync::Arc;
 
-#[derive(Debug, Snafu)]
-#[snafu(visibility = "pub")]
-pub enum TreeError {
-    #[snafu(display("Requested tree unavailable"))]
-    TreeUnavailable { err: String },
-}
-
 /// Tree dlib state, to be passed to and returned by fold.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TreeState {
     // call_address is the contract address who owns the library object
     pub caller_address: Address,
@@ -33,7 +28,7 @@ pub struct TreeState {
 #[async_trait]
 impl Foldable for TreeState {
     type InitialState = (U256, Address);
-    type Error = TreeError;
+    type Error = Error;
 
     async fn sync<M: Middleware + 'static>(
         initial_state: &Self::InitialState,
@@ -51,11 +46,9 @@ impl Foldable for TreeState {
             .topic1(identifier)
             .query()
             .await
-            .map_err(|e| {
-                TreeUnavailable {
-                    err: format!("Error querying for vertex inserted: {}", e),
-                }
-                .build()
+            .map_err(|e| e.into())
+            .context(TreeUnavailable {
+                err: format!("Error querying for vertex inserted"),
             })?;
 
         let state = compute_state(
@@ -65,13 +58,7 @@ impl Foldable for TreeState {
                 tree: None,
                 identifier,
             },
-        )
-        .map_err(|e| {
-            TreeUnavailable {
-                err: format!("Could not update tree state: {}", e),
-            }
-            .build()
-        })?;
+        )?;
 
         Ok(state)
     }
@@ -101,20 +88,12 @@ impl Foldable for TreeState {
             .topic1(identifier)
             .query()
             .await
-            .map_err(|e| {
-                TreeUnavailable {
-                    err: format!("Error querying for vertex inserted: {}", e),
-                }
-                .build()
+            .map_err(|e| e.into())
+            .context(TreeUnavailable {
+                err: format!("Error querying for vertex inserted"),
             })?;
 
-        let state = compute_state(inserted_events, previous_state.clone())
-            .map_err(|e| {
-                TreeUnavailable {
-                    err: format!("Could not update tree state: {}", e),
-                }
-                .build()
-            })?;
+        let state = compute_state(inserted_events, previous_state.clone())?;
 
         Ok(state)
     }
