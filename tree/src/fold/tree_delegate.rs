@@ -38,29 +38,7 @@ impl Foldable for TreeState {
     ) -> std::result::Result<Self, Self::Error> {
         let (identifier, caller_address) = *initial_state;
 
-        let contract = tree_contract::Tree::new(caller_address, access);
-
-        // Get all inserted events.
-        let inserted_events = contract
-            .vertex_inserted_filter()
-            .topic1(identifier)
-            .query()
-            .await
-            .map_err(|e| e.into())
-            .context(TreeUnavailable {
-                err: format!("Error querying for vertex inserted"),
-            })?;
-
-        let state = compute_state(
-            inserted_events,
-            TreeState {
-                caller_address,
-                tree: None,
-                identifier,
-            },
-        )?;
-
-        Ok(state)
+        compute_state(access, caller_address, identifier, None).await
     }
 
     async fn fold<M: Middleware + 'static>(
@@ -80,42 +58,48 @@ impl Foldable for TreeState {
             return Ok(previous_state.clone());
         }
 
-        let contract = tree_contract::Tree::new(caller_address, access);
-
-        // Get all inserted events.
-        let inserted_events = contract
-            .vertex_inserted_filter()
-            .topic1(identifier)
-            .query()
-            .await
-            .map_err(|e| e.into())
-            .context(TreeUnavailable {
-                err: format!("Error querying for vertex inserted"),
-            })?;
-
-        let state = compute_state(inserted_events, previous_state.clone())?;
-
-        Ok(state)
+        compute_state(
+            access,
+            caller_address,
+            identifier,
+            previous_state.tree.clone(),
+        )
+        .await
     }
 }
 
 /// Computes the state from all events emission
-fn compute_state(
-    events: Vec<tree_contract::VertexInsertedFilter>,
-    previous_state: TreeState,
+async fn compute_state<M: Middleware + 'static>(
+    access: Arc<M>,
+    caller_address: Address,
+    identifier: U256,
+    previous_tree: Option<Tree>,
 ) -> crate::error::Result<TreeState> {
-    let tree =
-        events
-            .into_iter()
-            .try_fold(previous_state.tree, |tree, event| {
-                tree.unwrap_or_default()
-                    .insert_vertex(event.parent)
-                    .map(|tree| Some(tree))
-            })?;
+    let contract = tree_contract::Tree::new(caller_address, access);
+
+    // Get all inserted events.
+    let inserted_events = contract
+        .vertex_inserted_filter()
+        .topic1(identifier)
+        .query()
+        .await
+        .map_err(|e| e.into())
+        .context(TreeUnavailable {
+            err: format!("Error querying for vertex inserted"),
+        })?;
+
+    let tree = inserted_events.into_iter().try_fold(
+        previous_tree,
+        |tree, event| {
+            tree.unwrap_or_default()
+                .insert_vertex(event.parent)
+                .map(|tree| Some(tree))
+        },
+    )?;
 
     Ok(TreeState {
-        caller_address: previous_state.caller_address,
-        identifier: previous_state.identifier,
+        caller_address,
+        identifier,
         tree,
     })
 }
