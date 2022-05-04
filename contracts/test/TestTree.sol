@@ -49,13 +49,13 @@ contract TestTree {
         return t.getDepth(_vertex);
     }
 
-    function getVertex(uint32 _vertex)
-        public
-        view
-        returns (Tree.Vertex memory)
-    {
-        return t.getVertex(_vertex);
-    }
+    // function getVertex(uint32 _vertex)
+    //     public
+    //     view
+    //     returns (Tree.Vertex memory)
+    // {
+    //     return t.getVertex(_vertex);
+    // }
 
     function getTreeSize() public view returns (uint32) {
         return t.getTreeSize();
@@ -67,5 +67,20 @@ contract TestTree {
         returns (uint32)
     {
         return t.getAncestorAtDepth(_vertex, _depth);
+    }
+
+    function getAncestors(uint32 _vertex)
+        public
+        view
+        returns (uint32[] memory)
+    {
+        Tree.Vertex storage v = t.getVertex(_vertex);
+        uint32[] memory ancestors = new uint32[](v.ancestorsLength);
+
+        for (uint32 i = 0; i < ancestors.length; ++i) {
+            ancestors[i] = v.ancestors[i];
+        }
+
+        return ancestors;
     }
 }

@@ -77,12 +77,11 @@ describe("TestTree", async () => {
             .to.emit(testTree, "VertexInserted")
             .withArgs(vertex7Index);
 
-        const vertex8 = await testTree.getVertex(vertex8Index);
+        const ancestors8 = await testTree.getAncestors(vertex8Index);
 
-        expect(
-            vertex8.ancestors,
-            "Vertex8 ancestors should match"
-        ).to.deep.equal(vertex8Ancestors);
+        expect(ancestors8, "Vertex8 ancestors should match").to.deep.equal(
+            vertex8Ancestors
+        );
 
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
@@ -110,12 +109,11 @@ describe("TestTree", async () => {
             .to.emit(testTree, "VertexInserted")
             .withArgs(vertex7Index);
 
-        const vertex9 = await testTree.getVertex(vertex9Index);
+        const ancestors9 = await testTree.getAncestors(vertex9Index);
 
-        expect(
-            vertex9.ancestors,
-            "Vertex9 ancestors should match"
-        ).to.deep.equal(vertex9Ancestors);
+        expect(ancestors9, "Vertex9 ancestors should match").to.deep.equal(
+            vertex9Ancestors
+        );
 
         if (enableDelegate) {
             let state = JSON.parse(await getState(initialState));
@@ -137,7 +135,7 @@ describe("TestTree", async () => {
 
         // requirement
         await expect(
-            testTree.getVertex(vertex9Index + 1),
+            testTree.getAncestors(vertex9Index + 1),
             "getVertex should revert if vertex index is invalid"
         ).to.be.revertedWith("vertex index exceeds current tree size");
 
@@ -159,22 +157,20 @@ describe("TestTree", async () => {
         const vertex256Index = 256;
         const vertex256Ancestors = [255, 254, 252, 248, 240, 224, 192, 128, 0];
 
-        const vertex256 = await testTree.getVertex(vertex256Index);
+        const ancestors256 = await testTree.getAncestors(vertex256Index);
 
-        expect(
-            vertex256.ancestors,
-            "Verte256 ancestors should match"
-        ).to.deep.equal(vertex256Ancestors);
+        expect(ancestors256, "Verte256 ancestors should match").to.deep.equal(
+            vertex256Ancestors
+        );
 
         const vertex264Index = 264;
         const vertex264Ancestors = [263, 262, 260, 256];
 
-        const vertex264 = await testTree.getVertex(vertex264Index);
+        const ancestors264 = await testTree.getAncestors(vertex264Index);
 
-        expect(
-            vertex264.ancestors,
-            "Vertex264 ancestors should match"
-        ).to.deep.equal(vertex264Ancestors);
+        expect(ancestors264, "Vertex264 ancestors should match").to.deep.equal(
+            vertex264Ancestors
+        );
     });
 
     it("test getAncestorAtDepth", async () => {
