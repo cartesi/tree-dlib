@@ -24,26 +24,31 @@ library Tree {
         uint32 deepestVertex;
         uint32 deepestDepth;
         uint32 verticesLength;
-        mapping(uint32 => Vertex) vertices;
+        mapping(uint256 => Vertex) vertices;
     }
 
     struct Vertex {
         uint32 depth; // depth of the vertex in the tree
         uint32 ancestorsLength;
-        mapping(uint32 => uint32) ancestors; // pointers to ancestors' indices in the vertices map (tree)
+        // each uint256 value stores 8 ancestors, each takes a uint32 slot,
+        // the key used to access the value should be preprocessed,
+        // 0 => uint32[7],uint32[6],uint32[5],uint32[4],uint32[3],uint32[2],uint32[1],uint32[0]
+        // 1 => uint32[15],uint32[14],uint32[13],uint32[12],uint32[11]],uint32[10],uint32[9],uint32[8]
+        mapping(uint256 => uint256) ancestors; // pointers to ancestors' indices in the vertices map (tree)
     }
 
     event VertexInserted(uint32 _parent);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
-    /// @param _parent the index of parent vertex in the vertices array (tree)
+    /// @param _parent the index of parent vertex in the vertices map (tree)
     /// @return index of the inserted vertex
     function insertVertex(
         TreeCtx storage _tree,
         uint32 _parent
     ) public returns (uint32) {
         uint32 treeSize = uint32(_tree.verticesLength);
+        _tree.verticesLength ++;
 
         if (treeSize == 0) {
             // insert the very first vertex into the tree
@@ -59,20 +64,17 @@ library Tree {
             // calculate all ancestors' depths of the new vertex
             uint32[] memory requiredDepths = getRequiredDepths(parentDepth + 1);
 
-            // construct the ancestors array by getting index of each ancestor in requiredDepths
+            // construct the ancestors map by getting index of each ancestor in requiredDepths
             for (uint32 i = 0; i < requiredDepths.length; ++i) {
-                _tree.vertices[treeSize].ancestors[i] = getAncestorAtDepth(
+                setAncestor(_tree, treeSize, i, getAncestorAtDepth(
                     _tree,
                     _parent,
-                    requiredDepths[i]
-                );
+                    requiredDepths[i]));
             }
 
             _tree.vertices[treeSize].depth = parentDepth + 1;
             _tree.vertices[treeSize].ancestorsLength = uint32(requiredDepths.length);
         }
-
-        _tree.verticesLength ++;
 
         if (_tree.vertices[treeSize].depth > _tree.deepestDepth) {
             _tree.deepestDepth = _tree.vertices[treeSize].depth;
@@ -84,9 +86,56 @@ library Tree {
         return treeSize;
     }
 
+    /// @notice Set an ancestor of a vertex in the tree with a certain ancestor offset
+    /// @param _tree pointer to the tree storage
+    /// @param _vertex the index of the vertex in the vertices map (tree)
+    /// @param _ancestorOffset the offset of the ancestor in ancestor map
+    /// @param _ancestorIndex the index of ancestor vertex in the tree
+    function setAncestor(
+        TreeCtx storage _tree,
+        uint32 _vertex,
+        uint256 _ancestorOffset,
+        uint32 _ancestorIndex
+    ) private {
+        require(
+            _vertex < _tree.verticesLength,
+            "vertex index exceeds current tree size"
+        );
+
+        Vertex storage v = _tree.vertices[_vertex];
+
+        uint256 key = _ancestorOffset / 8;
+        uint256 offset = _ancestorOffset % 8;
+        v.ancestors[key] = uint256(_ancestorIndex) << (offset * 32) | v.ancestors[key];
+    }
+
+    /// @notice Get an ancestor of a vertex in the tree with a certain ancestor offset
+    /// @param _tree pointer to the tree storage
+    /// @param _vertex the index of the vertex in the vertices map (tree)
+    /// @param _ancestorOffset the offset of the ancestor in ancestor map
+    /// @return index of ancestor vertex in the tree
+    function getAncestor(
+        TreeCtx storage _tree,
+        uint32 _vertex,
+        uint256 _ancestorOffset
+    ) public view returns (uint32) {
+        require(
+            _vertex < _tree.verticesLength,
+            "vertex index exceeds current tree size"
+        );
+
+        Vertex storage v = _tree.vertices[_vertex];
+
+        uint256 key = _ancestorOffset / 8;
+        uint256 offset = _ancestorOffset % 8;
+        uint32 ancestor = uint32(v.ancestors[key] >> (offset * 32) & 0xffffffff);
+
+        return ancestor;
+    }
+
     /// @notice Search an ancestor of a vertex in the tree at a certain depth
     /// @param _tree pointer to the tree storage
-    /// @param _vertex the index of the vertex in the vertices array (tree)
+    /// @param _vertex the index of the vertex in the vertices map (tree)
     /// @param _depth the depth of the ancestor
     /// @return index of ancestor at depth of _vertex
     function getAncestorAtDepth(
@@ -114,16 +163,17 @@ library Tree {
             // -> b'0100 0000 -> b'0010 0000 -> b'0001 1000
             // -> b'0001 0100
 
-            // given that ancestorsIndex is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
-            // so the continue condition has to be ancestorsIndex < ancestorsLength,
-            // can't be ancestorsIndex >= 0
+            // given that ancestorsOffset is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
+            // so the continue condition has to be ancestorsOffset < ancestorsLength,
+            // can't be ancestorsOffset >= 0
             unchecked {
+                uint32 temp_v = vertex;
                 for (
-                    uint32 ancestorsIndex = ancestorsLength - 1;
-                    ancestorsIndex < ancestorsLength;
-                    --ancestorsIndex
+                    uint256 ancestorsOffset = ancestorsLength - 1;
+                    ancestorsOffset < ancestorsLength;
+                    --ancestorsOffset
                 ) {
-                    vertex = v.ancestors[ancestorsIndex];
+                    vertex = getAncestor(_tree, temp_v, ancestorsOffset);
 
                     // stop at the ancestor who's closest to the target depth
                     if (_tree.vertices[vertex].depth >= _depth) {
@@ -138,7 +188,7 @@ library Tree {
 
     /// @notice Get depth of vertex
     /// @param _tree pointer to the tree storage
-    /// @param _vertex the index of the vertex in the vertices array (tree)
+    /// @param _vertex the index of the vertex in the vertices map (tree)
     function getDepth(TreeCtx storage _tree, uint32 _vertex)
         public
         view
@@ -149,7 +199,7 @@ library Tree {
 
     /// @notice Get vertex from the tree
     /// @param _tree pointer to the tree storage
-    /// @param _vertex the index of the vertex in the vertices array (tree)
+    /// @param _vertex the index of the vertex in the vertices map (tree)
     function getVertex(TreeCtx storage _tree, uint32 _vertex)
         public
         view

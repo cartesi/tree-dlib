@@ -78,7 +78,7 @@ contract TestTree {
         uint32[] memory ancestors = new uint32[](v.ancestorsLength);
 
         for (uint32 i = 0; i < ancestors.length; ++i) {
-            ancestors[i] = v.ancestors[i];
+            ancestors[i] = t.getAncestor(_vertex, i);
         }
 
         return ancestors;
