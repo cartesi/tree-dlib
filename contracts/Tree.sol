@@ -65,11 +65,15 @@ library Tree {
             uint32[] memory requiredDepths = getRequiredDepths(parentDepth + 1);
 
             // construct the ancestors map by getting index of each ancestor in requiredDepths
-            for (uint32 i = 0; i < requiredDepths.length; ++i) {
+            for (uint32 i = 0; i < requiredDepths.length;) {
                 setAncestor(_tree, treeSize, i, getAncestorAtDepth(
                     _tree,
                     _parent,
                     requiredDepths[i]));
+
+                unchecked {
+                    ++i;
+                }
             }
 
             _tree.vertices[treeSize].depth = parentDepth + 1;
@@ -166,19 +170,20 @@ library Tree {
             // given that ancestorsOffset is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
             // so the continue condition has to be ancestorsOffset < ancestorsLength,
             // can't be ancestorsOffset >= 0
-            unchecked {
-                uint32 temp_v = vertex;
-                for (
-                    uint256 ancestorsOffset = ancestorsLength - 1;
-                    ancestorsOffset < ancestorsLength;
-                    --ancestorsOffset
-                ) {
-                    vertex = getAncestor(_tree, temp_v, ancestorsOffset);
+            uint32 temp_v = vertex;
+            for (
+                uint256 ancestorsOffset = ancestorsLength - 1;
+                ancestorsOffset < ancestorsLength;
+            ) {
+                vertex = getAncestor(_tree, temp_v, ancestorsOffset);
 
-                    // stop at the ancestor who's closest to the target depth
-                    if (_tree.vertices[vertex].depth >= _depth) {
-                        break;
-                    }
+                // stop at the ancestor who's closest to the target depth
+                if (_tree.vertices[vertex].depth >= _depth) {
+                    break;
+                }
+
+                unchecked {
+                    --ancestorsOffset;
                 }
             }
         }
@@ -241,11 +246,15 @@ library Tree {
 
         // algorithm 1
         // get count of trailing ones of _depth from trailing1table
-        for (uint256 i = 0; i < 4; ++i) {
+        for (uint256 i = 0; i < 4;) {
             uint32 partialCount = uint8(trailing1table[depth >> (i * 8) & 0xff]);
             count = count + partialCount;
             if (partialCount != 8) {
                 break;
+            }
+
+            unchecked {
+                ++i;
             }
         }
 
@@ -266,9 +275,13 @@ library Tree {
         // example _depth = b'1100 0000: b'1011 1111 -> b'1011 1110 -> b'1011 1100
         //                            -> b'1011 1000 -> b'1011 0000 -> b'1010 0000
         //                            -> b'1000 0000
-        for (uint32 i = 0; i < count; ++i) {
+        for (uint32 i = 0; i < count;) {
             depths[i] = depth;
             depth = depth & (UINT32_MAX << (i + 1));
+
+            unchecked {
+                ++i;
+            }
         }
 
         return depths;
