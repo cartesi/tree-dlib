@@ -21,7 +21,7 @@ contract TestTree {
     Tree.TreeCtx t;
 
     // Duplicate event from Tree
-    event VertexInserted(uint256 indexed _id, uint32 _parent);
+    event VertexInserted(uint32 _parent);
 
     // event VertexInserted(uint32 _index, Tree.Vertex _vertex);
 
@@ -38,7 +38,7 @@ contract TestTree {
     }
 
     function insertVertex(uint32 _parent) public {
-        t.insertVertex(0, _parent);
+        t.insertVertex(_parent);
     }
 
     function getDeepest() public view returns (uint32, uint32) {

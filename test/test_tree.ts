@@ -13,7 +13,6 @@ describe("TestTree", async () => {
     let initialState: string;
 
     let testTree: TestTree;
-    const TreeId = 0;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -67,7 +66,7 @@ describe("TestTree", async () => {
             "Insert vertex8 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(TreeId, vertex7Index);
+            .withArgs(vertex7Index);
 
         const vertex8 = await testTree.getVertex(vertex8Index);
 
@@ -100,7 +99,7 @@ describe("TestTree", async () => {
             "Insert vertex9 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(TreeId, vertex7Index);
+            .withArgs(vertex7Index);
 
         const vertex9 = await testTree.getVertex(vertex9Index);
 
@@ -182,7 +181,7 @@ describe("TestTree", async () => {
             "Insert vertex8 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(TreeId, vertex7Index);
+            .withArgs(vertex7Index);
 
         expect(
             await testTree.getAncestorAtDepth(vertex8Index, vertex8Depth),
@@ -200,7 +199,7 @@ describe("TestTree", async () => {
             "Insert vertex9 should emit event"
         )
             .to.emit(testTree, "VertexInserted")
-            .withArgs(TreeId, vertex7Index);
+            .withArgs(vertex7Index);
 
         expect(
             await testTree.getAncestorAtDepth(vertex9Index, vertex9Depth),

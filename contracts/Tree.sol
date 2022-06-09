@@ -31,21 +31,14 @@ library Tree {
         uint32 depth; // depth of the vertex in the tree
     }
 
-    // Because Tree is a library, the event is going to be emitted from the caller contract.
-    // When there're multiple objects of this library,
-    // we need this `_id` to differentiate one from another
-    event VertexInserted(uint256 indexed _id, uint32 _parent);
-
-    // event VertexInserted(uint32 _index, Vertex _vertex);
+    event VertexInserted(uint32 _parent);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
-    /// @param _id the identifier to differentiate each tree from caller contract
     /// @param _parent the index of parent vertex in the vertices array (tree)
     /// @return index of the inserted vertex
     function insertVertex(
         TreeCtx storage _tree,
-        uint256 _id,
         uint32 _parent
     ) public returns (uint32) {
         Vertex memory v;
@@ -85,7 +78,7 @@ library Tree {
             _tree.deepestVertex = treeSize;
         }
 
-        emit VertexInserted(_id, _parent);
+        emit VertexInserted(_parent);
 
         return treeSize;
     }
