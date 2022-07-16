@@ -3,16 +3,16 @@
   "chainId": "80001",
   "contracts": {
     "Tree": {
-      "address": "0xFCf6ED0062c5Df801784c58503F893591466329D",
+      "address": "0xDad64841ccf6528Ab2395B44e954527CC1cA1c94",
       "abi": [
         {
           "anonymous": false,
           "inputs": [
             {
               "indexed": false,
-              "internalType": "uint32",
+              "internalType": "uint256",
               "name": "_parent",
-              "type": "uint32"
+              "type": "uint256"
             }
           ],
           "name": "VertexInserted",
