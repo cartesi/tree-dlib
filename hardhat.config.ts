@@ -1,28 +1,19 @@
-// Copyright (C) 2020 Cartesi Pte. Ltd.
+// Copyright 2021 Cartesi Pte. Ltd.
 
-// This program is free software: you can redistribute it and/or modify it under
-// the terms of the GNU General Public License as published by the Free Software
-// Foundation, either version 3 of the License, or (at your option) any later
-// version.
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy
+// of the license at http://www.apache.org/licenses/LICENSE-2.0
 
-// This program is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-// PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-// Note: This component currently has dependencies that are licensed under the GNU
-// GPL, version 3, and so you should treat this component as a whole as being under
-// the GPL version 3. But all Cartesi-written code in this component is licensed
-// under the Apache License, version 2, or a compatible permissive license, and can
-// be used independently under the Apache v2 license. After this component is
-// rewritten, the entire component will be released under the Apache v2 license.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
 
 import { HardhatUserConfig } from "hardhat/config";
 import { HttpNetworkUserConfig } from "hardhat/types";
 
-import "@nomiclabs/hardhat-waffle";
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
@@ -42,7 +33,7 @@ const infuraNetwork = (
         url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
         chainId,
         gas,
-        accounts: mnemonic ? { mnemonic } : undefined
+        accounts: mnemonic ? { mnemonic } : undefined,
     };
 };
 
@@ -51,7 +42,7 @@ const config: HardhatUserConfig = {
         hardhat: mnemonic ? { accounts: { mnemonic } } : {},
         localhost: {
             url: "http://localhost:8545",
-            accounts: mnemonic ? { mnemonic } : undefined
+            accounts: mnemonic ? { mnemonic } : undefined,
         },
         ropsten: infuraNetwork("ropsten", 3, 6283185),
         rinkeby: infuraNetwork("rinkeby", 4, 6283185),
@@ -62,7 +53,7 @@ const config: HardhatUserConfig = {
         bsc_testnet: {
             url: "https://data-seed-prebsc-1-s1.binance.org:8545",
             chainId: 97,
-            accounts: mnemonic ? { mnemonic } : undefined
+            accounts: mnemonic ? { mnemonic } : undefined,
         },
         avax_testnet: {
             url: "https://api.avax-test.network/ext/bc/C/rpc",
@@ -73,15 +64,7 @@ const config: HardhatUserConfig = {
     solidity: {
         compilers: [
             {
-                version: "0.7.4",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                    },
-                },
-            },
-            {
-                version: "0.8.4",
+                version: "0.8.15",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -93,7 +76,7 @@ const config: HardhatUserConfig = {
     paths: {
         artifacts: "artifacts",
         deploy: "deploy",
-        deployments: "deployments"
+        deployments: "deployments",
     },
     typechain: {
         outDir: "src/types",
@@ -103,12 +86,12 @@ const config: HardhatUserConfig = {
         apiKey: process.env.ETHERSCAN_API_KEY,
     },
     mocha: {
-      timeout: 120000
+        timeout: 120000,
     },
     namedAccounts: {
         deployer: {
-            default: 0
-        }
+            default: 0,
+        },
     },
 };
 
