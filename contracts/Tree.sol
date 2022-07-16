@@ -15,7 +15,7 @@ pragma abicoder v2;
 pragma solidity ^0.8.0;
 
 library Tree {
-    uint32 constant UINT32_MAX = 2**32 - 1;
+    uint256 constant UINT32_MAX = 2**32 - 1;
     // count of trailing ones for [0:256)
     bytes constant trailing1table =
         hex"00010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010006000100020001000300010002000100040001000200010003000100020001000500010002000100030001000200010004000100020001000300010002000100070001000200010003000100020001000400010002000100030001000200010005000100020001000300010002000100040001000200010003000100020001000600010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010008";
@@ -37,13 +37,13 @@ library Tree {
         mapping(uint256 => uint256) ancestors; // pointers to ancestors' indices in the vertices map (tree)
     }
 
-    event VertexInserted(uint32 _parent);
+    event VertexInserted(uint256 _parent);
 
     /// @notice Insert a vertex to the tree
     /// @param _tree pointer to the tree storage
     /// @param _parent the index of parent vertex in the vertices map (tree)
     /// @return index of the inserted vertex
-    function insertVertex(TreeCtx storage _tree, uint32 _parent)
+    function insertVertex(TreeCtx storage _tree, uint256 _parent)
         public
         returns (uint256)
     {
@@ -58,15 +58,15 @@ library Tree {
             // insert vertex to the tree attaching to another vertex
             require(_parent < treeSize, "parent index exceeds tree size");
 
-            uint32 parentDepth = _tree.vertices[_parent].depth;
+            uint256 parentDepth = _tree.vertices[_parent].depth;
 
             // construct the ancestors map in batch
             batchSetAncestors(v, parentDepth);
         }
 
-        uint32 depth = v.depth;
+        uint256 depth = v.depth;
         if (depth > _tree.deepestDepth) {
-            _tree.deepestDepth = depth;
+            _tree.deepestDepth = uint32(depth);
             _tree.deepestVertex = uint32(treeSize);
         }
 
@@ -78,9 +78,11 @@ library Tree {
     /// @notice Set ancestors in batches, each of which has up to 8 ancestors
     /// @param _v pointer to the vertex storage
     /// @param _parentDepth the parent depth
-    function batchSetAncestors(Vertex storage _v, uint32 _parentDepth) private {
+    function batchSetAncestors(Vertex storage _v, uint256 _parentDepth)
+        private
+    {
         // calculate all ancestors' depths of the new vertex
-        uint32[] memory requiredDepths = getRequiredDepths(_parentDepth + 1);
+        uint256[] memory requiredDepths = getRequiredDepths(_parentDepth + 1);
         uint256 batchPointer; // point to the beginning of a batch
 
         while (batchPointer < requiredDepths.length) {
@@ -91,8 +93,7 @@ library Tree {
             ) {
                 ancestorsBatch =
                     ancestorsBatch |
-                    (uint256(requiredDepths[batchPointer + offset]) <<
-                        (offset * 32));
+                    (requiredDepths[batchPointer + offset] << (offset * 32));
 
                 ++offset;
             }
@@ -101,7 +102,7 @@ library Tree {
             batchPointer += offset;
         }
 
-        _v.depth = _parentDepth + 1;
+        _v.depth = uint32(_parentDepth + 1);
         _v.ancestorsLength = uint32(requiredDepths.length);
     }
 
@@ -112,9 +113,9 @@ library Tree {
     /// @return index of ancestor vertex in the tree
     function getAncestor(
         TreeCtx storage _tree,
-        uint32 _vertex,
+        uint256 _vertex,
         uint256 _ancestorOffset
-    ) public view returns (uint32) {
+    ) public view returns (uint256) {
         require(
             _vertex < _tree.verticesLength,
             "vertex index exceeds tree size"
@@ -124,9 +125,7 @@ library Tree {
 
         uint256 key = _ancestorOffset / 8;
         uint256 offset = _ancestorOffset % 8;
-        uint32 ancestor = uint32(
-            (v.ancestors[key] >> (offset * 32)) & 0xffffffff
-        );
+        uint256 ancestor = (v.ancestors[key] >> (offset * 32)) & 0xffffffff;
 
         return ancestor;
     }
@@ -138,9 +137,9 @@ library Tree {
     /// @return index of ancestor at depth of _vertex
     function getAncestorAtDepth(
         TreeCtx storage _tree,
-        uint32 _vertex,
-        uint32 _depth
-    ) public view returns (uint32) {
+        uint256 _vertex,
+        uint256 _depth
+    ) public view returns (uint256) {
         require(
             _vertex < _tree.verticesLength,
             "vertex index exceeds tree size"
@@ -150,11 +149,11 @@ library Tree {
             "search depth > vertex depth"
         );
 
-        uint32 vertex = _vertex;
+        uint256 vertex = _vertex;
 
         while (_depth != _tree.vertices[vertex].depth) {
             Vertex storage v = _tree.vertices[vertex];
-            uint32 ancestorsLength = v.ancestorsLength;
+            uint256 ancestorsLength = v.ancestorsLength;
             // start searching from the oldest ancestor (smallest depth)
             // example: search ancestor at depth d(20, b'0001 0100) from vertex v at depth (176, b'1011 0000)
             //    b'1011 0000 -> b'1010 0000 -> b'1000 0000
@@ -164,7 +163,7 @@ library Tree {
             // given that ancestorsOffset is unsigned, when -1 at 0, it'll underflow and become UINT32_MAX
             // so the continue condition has to be ancestorsOffset < ancestorsLength,
             // can't be ancestorsOffset >= 0
-            uint32 temp_v = vertex;
+            uint256 temp_v = vertex;
             for (
                 uint256 ancestorsOffset = ancestorsLength - 1;
                 ancestorsOffset < ancestorsLength;
@@ -189,10 +188,10 @@ library Tree {
     /// @notice Get depth of vertex
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices map (tree)
-    function getDepth(TreeCtx storage _tree, uint32 _vertex)
+    function getDepth(TreeCtx storage _tree, uint256 _vertex)
         public
         view
-        returns (uint32)
+        returns (uint256)
     {
         return getVertex(_tree, _vertex).depth;
     }
@@ -200,7 +199,7 @@ library Tree {
     /// @notice Get vertex from the tree
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices map (tree)
-    function getVertex(TreeCtx storage _tree, uint32 _vertex)
+    function getVertex(TreeCtx storage _tree, uint256 _vertex)
         public
         view
         returns (Tree.Vertex storage)
@@ -215,7 +214,7 @@ library Tree {
 
     /// @notice Get current tree size
     /// @param _tree pointer to the tree storage
-    function getTreeSize(TreeCtx storage _tree) public view returns (uint32) {
+    function getTreeSize(TreeCtx storage _tree) public view returns (uint256) {
         return _tree.verticesLength;
     }
 
@@ -225,18 +224,18 @@ library Tree {
     function getDeepest(TreeCtx storage _tree)
         public
         view
-        returns (uint32, uint32)
+        returns (uint256, uint256)
     {
         return (_tree.deepestVertex, _tree.deepestDepth);
     }
 
-    function getRequiredDepths(uint32 _depth)
+    function getRequiredDepths(uint256 _depth)
         private
         pure
-        returns (uint32[] memory)
+        returns (uint256[] memory)
     {
         // parent is always included in the ancestors
-        uint32 depth = _depth - 1;
+        uint256 depth = _depth - 1;
         uint256 count = 1;
 
         // algorithm 1
@@ -266,13 +265,13 @@ library Tree {
         //     depth = _depth - 1;
         // }
 
-        uint32[] memory depths = new uint32[](count);
+        uint256[] memory depths = new uint256[](count);
 
         // construct the depths array by removing the trailing ones from lsb one by one
         // example _depth = b'1100 0000: b'1011 1111 -> b'1011 1110 -> b'1011 1100
         //                            -> b'1011 1000 -> b'1011 0000 -> b'1010 0000
         //                            -> b'1000 0000
-        for (uint32 i = 0; i < count; ) {
+        for (uint256 i = 0; i < count; ) {
             depths[i] = depth;
             depth = depth & (UINT32_MAX << (i + 1));
 

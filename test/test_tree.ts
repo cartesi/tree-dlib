@@ -12,6 +12,7 @@
 
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
+import { BigNumber } from "ethers";
 
 import { TestTree, TestTree__factory } from "../src/types";
 import { getState } from "./getState";
@@ -160,7 +161,7 @@ describe("TestTree", async () => {
         const ancestors256 = await testTree.getAncestors(vertex256Index);
 
         expect(ancestors256, "Verte256 ancestors should match").to.deep.equal(
-            vertex256Ancestors
+            BigNumber.from(vertex256Ancestors)
         );
 
         const vertex264Index = 264;
@@ -238,8 +239,8 @@ describe("TestTree", async () => {
 
     it("getter functions", async () => {
         const initialTreeSize = 8;
-        const vertex7Index = 7;
-        const vertex7Depth = 7;
+        const vertex7Index = BigNumber.from(7);
+        const vertex7Depth = BigNumber.from(7);
 
         // tree size
         expect(
