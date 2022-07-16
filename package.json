@@ -21,7 +21,7 @@
         "export": "hardhat export-artifacts export/artifacts --hide-sources --including-empty-bytecode --including-no-public-functions",
         "info": "npm-scripts-info",
         "prepack": "run-s build tsc copy-dts",
-        "prettier": "prettier --check src/**/*.ts test/**/*.ts contracts/**/*.sol",
+        "prettier": "prettier --check src/**/*.ts test/**/*.ts contracts/**/*.sol deploy/**/*.ts",
         "solhint": "solhint contracts/**/*.sol",
         "start": "hardhat node",
         "test": "hardhat test",
