@@ -1,9 +1,9 @@
 {
-  "name": "polygon_mumbai",
-  "chainId": "80001",
+  "name": "optimism_goerli",
+  "chainId": "420",
   "contracts": {
     "Tree": {
-      "address": "0xFCf6ED0062c5Df801784c58503F893591466329D",
+      "address": "0xfb8f4954C989c6A0C1b238775E3F201777Fe89b3",
       "abi": [
         {
           "anonymous": false,
