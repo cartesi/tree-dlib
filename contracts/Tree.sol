@@ -11,12 +11,15 @@
 // specific language governing permissions and limitations under the License.
 
 /// @title Tree Library
-pragma abicoder v2;
+
 pragma solidity ^0.8.0;
 
 library Tree {
+    // The tree can store up to UINT32_MAX vertices, the type uses uint256 for gas optimization purpose.
+    // It's the library caller's responsibility to check the input arguments are within the proper range
     uint256 constant UINT32_MAX = 2**32 - 1;
     // count of trailing ones for [0:256)
+    // each number takes one byte
     bytes constant trailing1table =
         hex"00010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010006000100020001000300010002000100040001000200010003000100020001000500010002000100030001000200010004000100020001000300010002000100070001000200010003000100020001000400010002000100030001000200010005000100020001000300010002000100040001000200010003000100020001000600010002000100030001000200010004000100020001000300010002000100050001000200010003000100020001000400010002000100030001000200010008";
 
@@ -30,10 +33,11 @@ library Tree {
     struct Vertex {
         uint32 depth; // depth of the vertex in the tree
         uint32 ancestorsLength;
-        // each uint256 value stores 8 ancestors, each takes a uint32 slot,
+        // Each uint256 value stores 8 ancestors, each takes a uint32 slot,
         // the key used to access the value should be preprocessed,
         // 0 => uint32[7],uint32[6],uint32[5],uint32[4],uint32[3],uint32[2],uint32[1],uint32[0]
-        // 1 => uint32[15],uint32[14],uint32[13],uint32[12],uint32[11]],uint32[10],uint32[9],uint32[8]
+        // 1 => uint32[15],uint32[14],uint32[13],uint32[12],uint32[11],uint32[10],uint32[9],uint32[8]
+        // A vertex can have up to 31 ancestors
         mapping(uint256 => uint256) ancestors; // pointers to ancestors' indices in the vertices map (tree)
     }
 
@@ -44,10 +48,11 @@ library Tree {
     /// @param _parent the index of parent vertex in the vertices map (tree)
     /// @return index of the inserted vertex
     function insertVertex(TreeCtx storage _tree, uint256 _parent)
-        public
+        external
         returns (uint256)
     {
         uint256 treeSize = _tree.verticesLength;
+
         _tree.verticesLength++;
         Vertex storage v = _tree.vertices[treeSize];
 
@@ -139,7 +144,7 @@ library Tree {
         TreeCtx storage _tree,
         uint256 _vertex,
         uint256 _depth
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         require(
             _vertex < _tree.verticesLength,
             "vertex index exceeds tree size"
@@ -189,7 +194,7 @@ library Tree {
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices map (tree)
     function getDepth(TreeCtx storage _tree, uint256 _vertex)
-        public
+        external
         view
         returns (uint256)
     {
@@ -202,7 +207,7 @@ library Tree {
     function getVertex(TreeCtx storage _tree, uint256 _vertex)
         public
         view
-        returns (Tree.Vertex storage)
+        returns (Vertex storage)
     {
         require(
             _vertex < _tree.verticesLength,
@@ -214,7 +219,11 @@ library Tree {
 
     /// @notice Get current tree size
     /// @param _tree pointer to the tree storage
-    function getTreeSize(TreeCtx storage _tree) public view returns (uint256) {
+    function getTreeSize(TreeCtx storage _tree)
+        external
+        view
+        returns (uint256)
+    {
         return _tree.verticesLength;
     }
 
@@ -222,7 +231,7 @@ library Tree {
     /// @param _tree pointer to the tree storage
     /// @return index number and depth of the deepest vertex
     function getDeepest(TreeCtx storage _tree)
-        public
+        external
         view
         returns (uint256, uint256)
     {

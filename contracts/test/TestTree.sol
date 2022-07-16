@@ -11,7 +11,7 @@
 // specific language governing permissions and limitations under the License.
 
 /// @title Test Tree
-pragma abicoder v2;
+
 pragma solidity ^0.8.0;
 
 import "../Tree.sol";
@@ -22,8 +22,6 @@ contract TestTree {
 
     // Duplicate event from Tree
     event VertexInserted(uint256 _parent);
-
-    // event VertexInserted(uint32 _index, Tree.Vertex _vertex);
 
     constructor() {
         insertVertex(0); // first vertex, the parent index is ignored
@@ -48,14 +46,6 @@ contract TestTree {
     function getDepth(uint256 _vertex) public view returns (uint256) {
         return t.getDepth(_vertex);
     }
-
-    // function getVertex(uint32 _vertex)
-    //     public
-    //     view
-    //     returns (Tree.Vertex memory)
-    // {
-    //     return t.getVertex(_vertex);
-    // }
 
     function getTreeSize() public view returns (uint256) {
         return t.getTreeSize();
