@@ -1,5 +1,5 @@
 {
-  "name": "matic_testnet",
+  "name": "polygon_mumbai",
   "chainId": "80001",
   "contracts": {
     "Tree": {
