@@ -160,8 +160,8 @@ describe("TestTree", async () => {
 
         const ancestors256 = await testTree.getAncestors(vertex256Index);
 
-        expect(ancestors256, "Verte256 ancestors should match").to.deep.equal(
-            BigNumber.from(vertex256Ancestors)
+        expect(ancestors256, "Vertex256 ancestors should match").to.deep.equal(
+            vertex256Ancestors
         );
 
         const vertex264Index = 264;
