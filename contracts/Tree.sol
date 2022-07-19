@@ -37,7 +37,7 @@ library Tree {
         // the key used to access the value should be preprocessed,
         // 0 => uint32[7],uint32[6],uint32[5],uint32[4],uint32[3],uint32[2],uint32[1],uint32[0]
         // 1 => uint32[15],uint32[14],uint32[13],uint32[12],uint32[11],uint32[10],uint32[9],uint32[8]
-        // A vertex can have up to 31 ancestors
+        // A vertex can have up to 32 ancestors
         mapping(uint256 => uint256) ancestors; // pointers to ancestors' indices in the vertices map (tree)
     }
 
@@ -47,6 +47,7 @@ library Tree {
     /// @param _tree pointer to the tree storage
     /// @param _parent the index of parent vertex in the vertices map (tree)
     /// @return index of the inserted vertex
+    /// @dev the tree can hold up to UINT32_MAX vertices, if the insertVertex is called when tree is full, the transaction will be reverted
     function insertVertex(TreeCtx storage _tree, uint256 _parent)
         external
         returns (uint256)
