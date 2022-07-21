@@ -3,7 +3,7 @@
   "chainId": "97",
   "contracts": {
     "Tree": {
-      "address": "0x6D8266b0094367D0BCfB4347Ed62d75ca7bcfb7b",
+      "address": "0xA18569532C939C5Ae9F9449C746Ab62F85E1c670",
       "abi": [
         {
           "anonymous": false,
