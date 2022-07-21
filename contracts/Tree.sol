@@ -112,10 +112,10 @@ library Tree {
         _v.ancestorsLength = uint32(requiredDepths.length);
     }
 
-    /// @notice Get an ancestor of a vertex in the tree with a certain ancestor offset
+    /// @notice Get an ancestor of a vertex from its ancestor cache by offset
     /// @param _tree pointer to the tree storage
     /// @param _vertex the index of the vertex in the vertices map (tree)
-    /// @param _ancestorOffset the offset of the ancestor in ancestor map
+    /// @param _ancestorOffset the offset of the ancestor in ancestor cache
     /// @return index of ancestor vertex in the tree
     function getAncestor(
         TreeCtx storage _tree,
@@ -128,6 +128,8 @@ library Tree {
         );
 
         Vertex storage v = _tree.vertices[_vertex];
+
+        require(_ancestorOffset < v.ancestorsLength, "offset exceeds cache size");
 
         uint256 key = _ancestorOffset / 8;
         uint256 offset = _ancestorOffset % 8;
