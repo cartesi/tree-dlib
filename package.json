@@ -1,6 +1,6 @@
 {
     "name": "@cartesi/tree",
-    "version": "0.2.0",
+    "version": "1.0.0",
     "description": "Tree DLib",
     "scripts": {
         "build": "run-s codegen compile export",
