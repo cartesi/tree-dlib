@@ -1,0 +1,24 @@
+{
+  "name": "mainnet",
+  "chainId": "1",
+  "contracts": {
+    "Tree": {
+      "address": "0x8568cba0f6d0459651cd9f0bbcb01547e51dd4bc",
+      "abi": [
+        {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": false,
+              "internalType": "uint256",
+              "name": "_parent",
+              "type": "uint256"
+            }
+          ],
+          "name": "VertexInserted",
+          "type": "event"
+        }
+      ]
+    }
+  }
+}
